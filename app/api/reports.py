@@ -2,14 +2,14 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from datetime import datetime, timedelta
 from typing import Optional
 
-from ..services.opensearch_client import OpenSearchClient
+from ..services.json_storage import JSONStorage
 from ..services.report_generator import ReportGenerator
 from ..models.reports import CurrentRecommendations, ReportRequest
 from ..config import settings
 
 router = APIRouter(prefix="/api/v1/reports", tags=["reports"])
 
-opensearch_client = OpenSearchClient()
+storage = JSONStorage()
 report_generator = ReportGenerator()
 
 
@@ -26,7 +26,7 @@ async def get_daily_report(date: str):
                 detail="Invalid date format. Use YYYY-MM-DD"
             )
         
-        report = await opensearch_client.get_daily_report(date)
+        report = await storage.get_daily_report(date)
         
         if not report:
             raise HTTPException(
@@ -54,11 +54,11 @@ async def get_latest_daily_report():
     try:
         # Try today first, then yesterday
         today = datetime.now().strftime("%Y-%m-%d")
-        report = await opensearch_client.get_daily_report(today)
+        report = await storage.get_daily_report(today)
         
         if not report:
             yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-            report = await opensearch_client.get_daily_report(yesterday)
+            report = await storage.get_daily_report(yesterday)
             
             if not report:
                 raise HTTPException(
@@ -131,26 +131,19 @@ async def generate_summary_report(
 async def get_summary_report(report_id: str):
     """Get a specific summary report"""
     try:
-        # Extract year from report_id to determine index
-        if "_" in report_id:
-            date_part = report_id.split("_")[1]
-            year = date_part[:4]
-            index_name = f"summary-reports-{year}"
-        else:
-            # Fallback to current year
-            index_name = f"summary-reports-{datetime.now().year}"
+        # Look for the summary report file
+        from pathlib import Path
+        report_file = Path("data/summaries") / f"{report_id}.json"
         
-        try:
-            response = opensearch_client.client.get(
-                index=index_name,
-                id=report_id
-            )
-            report = response['_source']
-        except Exception:
+        if not report_file.exists():
             raise HTTPException(
                 status_code=404,
                 detail=f"Summary report {report_id} not found"
             )
+        
+        import json
+        with open(report_file, 'r') as f:
+            report = json.load(f)
         
         return {
             "report": report,
@@ -172,12 +165,12 @@ async def get_current_recommendations():
     try:
         # Get latest daily report
         today = datetime.now().strftime("%Y-%m-%d")
-        report = await opensearch_client.get_daily_report(today)
+        report = await storage.get_daily_report(today)
         
         if not report:
             # Try yesterday
             yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-            report = await opensearch_client.get_daily_report(yesterday)
+            report = await storage.get_daily_report(yesterday)
             
             if not report:
                 raise HTTPException(
@@ -237,10 +230,13 @@ async def get_reports_history(
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
         
-        # Search for reports
-        reports = await opensearch_client.search_reports(
-            start_date, end_date, report_type.upper()
-        )
+        # Get reports from JSON storage
+        if report_type.upper() == "DAILY":
+            reports = await storage.get_daily_reports_range(start_date, end_date)
+        else:
+            # For summary reports, we'd need to implement a similar range query
+            # For now, return empty list
+            reports = []
         
         return {
             "report_type": report_type.upper(),
@@ -266,7 +262,7 @@ async def get_performance_summary():
         end_date = datetime.now().strftime("%Y-%m-%d")
         start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
         
-        reports = await opensearch_client.search_reports(start_date, end_date, "DAILY")
+        reports = await storage.get_daily_reports_range(start_date, end_date)
         
         if not reports:
             return {

@@ -5,18 +5,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - OPENSEARCH_HOST=opensearch
-      - OPENSEARCH_PORT=9200
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY}
       - NEWS_API_KEY=${NEWS_API_KEY}
     depends_on:
-      - opensearch
       - redis
     volumes:
       - ./app:/app/app
+      - ./data:/app/data
     networks:
       - tradebot-network
     restart: unless-stopped
@@ -31,8 +29,6 @@ services:
     build: .
     command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2
     environment:
-      - OPENSEARCH_HOST=opensearch
-      - OPENSEARCH_PORT=9200
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -40,9 +36,9 @@ services:
       - NEWS_API_KEY=${NEWS_API_KEY}
     depends_on:
       - redis
-      - opensearch
     volumes:
       - ./app:/app/app
+      - ./data:/app/data
     networks:
       - tradebot-network
     restart: unless-stopped
@@ -52,8 +48,6 @@ services:
     build: .
     command: celery -A app.tasks.daily_tasks beat --loglevel=info
     environment:
-      - OPENSEARCH_HOST=opensearch
-      - OPENSEARCH_PORT=9200
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
@@ -64,31 +58,10 @@ services:
       - celery-worker
     volumes:
       - ./app:/app/app
+      - ./data:/app/data
     networks:
       - tradebot-network
     restart: unless-stopped
-
-  # OpenSearch for data storage
-  opensearch:
-    image: opensearchproject/opensearch:2.11.0
-    environment:
-      - discovery.type=single-node
-      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
-      - "DISABLE_SECURITY_PLUGIN=true"
-      - "DISABLE_INSTALL_DEMO_CONFIG=true"
-    ports:
-      - "9201:9200"
-      - "9601:9600"
-    volumes:
-      - opensearch_data:/usr/share/opensearch/data
-    networks:
-      - tradebot-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9200/_cluster/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # Redis for caching and Celery broker
   redis:
@@ -120,22 +93,8 @@ services:
     networks:
       - tradebot-network
     restart: unless-stopped
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:2.11.0
-    ports:
-      - "5601:5601"
-    environment:
-      - 'OPENSEARCH_HOSTS=["http://opensearch:9200"]'
-      - "DISABLE_SECURITY_DASHBOARDS_PLUGIN=true"
-    depends_on:
-      - opensearch
-    networks:
-      - tradebot-network
-    restart: unless-stopped
 
 volumes:
-  opensearch_data:
-    driver: local
   redis_data:
     driver: local
 

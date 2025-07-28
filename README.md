@@ -4,22 +4,24 @@ An automated stock analysis and investment recommendation system that provides d
 
 ## Features
 
-- **Daily Stock Analysis**: Automated collection and analysis of 35+ stocks
-- **LLM-Powered Insights**: Uses OpenAI GPT-4 for intelligent market analysis
+- **Dynamic Stock Lists**: Daily collection of stable and risky stocks from internet sources
+- **Daily Stock Analysis**: Automated collection and analysis of 40+ stocks
+- **LLM-Powered Insights**: Uses OpenAI GPT-4-1-nano for intelligent market analysis
 - **Dual Investment Strategy**: Recommendations for stable ($200) and risky ($50) allocations
 - **Real-time Data**: Integration with Yahoo Finance, Alpha Vantage, and news APIs
 - **Comprehensive Reports**: Daily and 30-day summary reports
 - **REST API**: Full API access to all data and recommendations
 - **Scheduled Analysis**: Automatic daily analysis at 12:00 Kyiv time
+- **Lightweight Storage**: JSON file-based storage system for efficient data management
 
 ## Architecture
 
 ```
-Data Sources → Data Collector → OpenSearch → AI Processor → Report Generator
-     ↓              ↓              ↓           ↓            ↓
-Yahoo Finance   Celery Tasks   Time-series   LLM Analysis   Daily Reports
-Alpha Vantage   Scheduling     Full-text     Risk Scoring   API Endpoints
-News APIs       Error Handling  Indexing      Confidence     Web Interface
+Stock Collector → Data Collector → JSON Storage → AI Processor → Report Generator
+     ↓                ↓              ↓             ↓            ↓
+Web Scraping     Yahoo Finance   File System   LLM Analysis   Daily Reports
+S&P 500 Lists    Alpha Vantage   Structured    Risk Scoring   API Endpoints
+Dividend Stocks  News APIs       JSON Files    Confidence     Web Interface
 ```
 
 ## Quick Start
@@ -28,7 +30,7 @@ News APIs       Error Handling  Indexing      Confidence     Web Interface
 
 - Docker and Docker Compose
 - API Keys:
-  - OpenAI API key
+  - OpenAI API key (for GPT-4-1-nano)
   - Alpha Vantage API key (free tier: 5 requests/min)
   - News API key (optional)
 
@@ -62,7 +64,6 @@ Once running, visit:
 - **API Documentation**: http://localhost:8000/docs
 - **Alternative Docs**: http://localhost:8000/redoc
 - **Celery Monitoring**: http://localhost:5555
-- **Data Visualization**: http://localhost:5601
 
 ## API Endpoints
 
@@ -94,8 +95,11 @@ Once running, visit:
 # Install dependencies
 pip install -r requirements.txt
 
-# Start services (OpenSearch + Redis)
-docker compose up opensearch redis -d
+# Start Redis service
+docker compose up redis -d
+
+# Create data directory
+mkdir -p data
 
 # Set environment variables
 export OPENAI_API_KEY="your-key"
@@ -126,18 +130,22 @@ python -m app.tasks.daily_tasks test
 
 ## Configuration
 
-### Stock Watchlist
+### Dynamic Stock Collection
 
-**Stable Stocks (20 positions)**:
-- Large Cap Tech: AAPL, MSFT, GOOGL, AMZN, NVDA
-- ETF Funds: SPY, QQQ, VTI, VOO, SCHD
-- Blue Chips: JNJ, PG, KO, WMT, HD
-- Financial: JPM, BAC, BRK-B, V, MA
+**Stable Stocks (up to 25 positions)**:
+- S&P 500 top companies by market cap
+- Dividend Aristocrats (25+ years of dividend increases)
+- Popular ETFs: SPY, QQQ, VTI, VOO, SCHD
+- Blue chip companies: AAPL, MSFT, JNJ, JPM, PG, KO, WMT, HD, V, MA
 
-**Risky Stocks (15 positions)**:
-- Growth Tech: NVDA, TSLA, PLTR, SNOW, ZM
-- Small/Mid Cap: UPST, ROKU, DKNG, COIN
-- Leverage ETF: TQQQ, SOXL, ARKK, SPXL, TECL
+**Risky Stocks (up to 15 positions)**:
+- Daily top gainers and most active stocks
+- Growth ETF holdings
+- High-beta volatile stocks: TSLA, NVDA, AMD, NFLX
+- Leveraged ETFs: TQQQ, SOXL, ARKK, SPXL, TECL
+- Recent IPOs and SPACs
+
+*Stock lists are automatically updated daily from internet sources*
 
 ### Scheduled Tasks
 
@@ -147,24 +155,29 @@ python -m app.tasks.daily_tasks test
 
 ## Data Flow
 
-1. **Data Collection** (09:00 UTC)
-   - Yahoo Finance: Price data, historical trends
+1. **Stock List Update** (09:00 UTC)
+   - Web scraping of S&P 500, dividend aristocrats, top gainers
+   - Dynamic collection of stable and risky stock candidates
+   - Validation of stock liquidity and tradability
+
+2. **Data Collection** (09:05 UTC)
+   - Yahoo Finance: Price data, historical trends for updated lists
    - Alpha Vantage: Technical indicators, fundamentals
    - News APIs: Sentiment analysis, market news
 
-2. **AI Analysis** (09:05-09:35 UTC)
-   - LLM processes each stock individually
+3. **AI Analysis** (09:10-09:35 UTC)
+   - LLM processes each stock individually using GPT-4-1-nano
    - Generates trend analysis, risk scores, recommendations
    - Assigns confidence levels and price targets
 
-3. **Report Generation** (09:35-09:40 UTC)
+4. **Report Generation** (09:35-09:40 UTC)
    - Creates daily investment report
    - Selects best stable and risky recommendations
-   - Stores all data in OpenSearch
+   - Stores all data in JSON files
 
-4. **API Availability** (09:40+ UTC)
+5. **API Availability** (09:40+ UTC)
    - Fresh recommendations available via API
-   - Historical data searchable and accessible
+   - Historical data accessible through JSON storage
 
 ## Monitoring
 
@@ -174,14 +187,17 @@ python -m app.tasks.daily_tasks test
 # System health
 curl http://localhost:8000/health
 
-# OpenSearch status
-curl http://localhost:9201/_cluster/health
+# System status with storage stats
+curl http://localhost:8000/api/v1/status
 
 # Redis connectivity
 docker exec trade-bot_redis_1 redis-cli ping
 
 # Celery workers
 curl http://localhost:5555/api/workers
+
+# Check data directory
+ls -la data/
 ```
 
 ### Logs
@@ -216,11 +232,14 @@ docker compose logs -f
 ### Backup Strategy
 
 ```bash
-# OpenSearch data backup
-docker exec opensearch_container curl -X POST "localhost:9200/_snapshot/backup"
+# JSON data backup
+tar -czf backup_$(date +%Y%m%d).tar.gz data/
 
 # Redis persistence
 docker exec redis_container redis-cli BGSAVE
+
+# Stock lists backup
+cp data/stock_lists.json stock_lists_backup_$(date +%Y%m%d).json
 ```
 
 ## Troubleshooting
@@ -231,23 +250,27 @@ docker exec redis_container redis-cli BGSAVE
    - Alpha Vantage: 5 requests/min (free tier)
    - Solution: Implement request queuing or upgrade plan
 
-2. **OpenSearch Memory**
-   - Increase `OPENSEARCH_JAVA_OPTS` heap size
-   - Monitor cluster health regularly
+2. **JSON Storage Issues**
+   - Check data directory permissions
+   - Monitor disk space usage
 
 3. **Celery Tasks Failing**
    - Check Redis connectivity
    - Verify API keys are set correctly
    - Review worker logs for specific errors
+   - Ensure data directory is writable
 
 ### Debug Commands
 
 ```bash
-# Test data collection
-python -c "from app.services.data_collector import DataCollector; import asyncio; dc = DataCollector(); print(asyncio.run(dc.collect_stock_data(['AAPL'])))"
+# Test data collection with dynamic stock lists
+python -c "from app.services.data_collector import DataCollector; import asyncio; dc = DataCollector(); print(asyncio.run(dc.collect_daily_data()))"
 
-# Test OpenSearch connection
-python -c "from app.services.opensearch_client import OpenSearchClient; import asyncio; osc = OpenSearchClient(); print(asyncio.run(osc.get_health_status()))"
+# Test JSON storage
+python -c "from app.services.json_storage import JSONStorage; js = JSONStorage(); print(js.get_health_status())"
+
+# Test stock list collection
+python -c "from app.services.stock_list_collector import StockListCollector; import asyncio; slc = StockListCollector(); print(asyncio.run(slc.update_stock_lists()))"
 
 # Test LLM analysis
 python -c "from app.services.analyzer import LLMAnalyzer; print('Analyzer initialized successfully')"
@@ -264,6 +287,15 @@ python -c "from app.services.analyzer import LLMAnalyzer; print('Analyzer initia
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Recent Updates
+
+### v2.0 - Dynamic Stock Collection
+- **Dynamic Stock Lists**: Stock lists are now collected daily from internet sources instead of using static lists
+- **Improved Coverage**: Up to 25 stable stocks and 15 risky stocks based on real-time market data
+- **Lightweight Architecture**: Replaced OpenSearch with JSON file storage for better performance and simplicity
+- **Enhanced Reliability**: Improved data validation and fallback mechanisms
+- **Better Monitoring**: Enhanced health checks and system status reporting
 
 ## Disclaimer
 

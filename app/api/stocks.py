@@ -2,13 +2,13 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 
-from ..services.opensearch_client import OpenSearchClient
+from ..services.json_storage import JSONStorage
 from ..services.data_collector import DataCollector
 from ..models.stock_data import StockData
 
 router = APIRouter(prefix="/api/v1/stocks", tags=["stocks"])
 
-opensearch_client = OpenSearchClient()
+storage = JSONStorage()
 data_collector = DataCollector()
 
 
@@ -16,8 +16,8 @@ data_collector = DataCollector()
 async def get_stock_analysis(symbol: str):
     """Get detailed analysis of a specific stock"""
     try:
-        # Get latest stock data from OpenSearch
-        stock_data = await opensearch_client.get_latest_stock_data(symbol.upper())
+        # Get latest stock data from JSON storage
+        stock_data = await storage.get_latest_stock_data(symbol.upper())
         
         if not stock_data:
             raise HTTPException(
@@ -47,41 +47,8 @@ async def get_stock_history(
 ):
     """Get historical analysis data for a stock"""
     try:
-        # Calculate date range
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        start_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
-        
-        # Search for historical data
-        query = {
-            "query": {
-                "bool": {
-                    "must": [
-                        {"term": {"symbol": symbol.upper()}},
-                        {"range": {
-                            "date": {
-                                "gte": start_date,
-                                "lte": end_date
-                            }
-                        }}
-                    ]
-                }
-            },
-            "sort": [
-                {"date": {"order": "desc"}}
-            ],
-            "size": days
-        }
-        
-        # Search across multiple indices if needed
-        current_month = datetime.now().strftime("%Y-%m")
-        index_pattern = f"daily-stock-data-{current_month}"
-        
-        response = opensearch_client.client.search(
-            index=index_pattern,
-            body=query
-        )
-        
-        history = [hit['_source'] for hit in response['hits']['hits']]
+        # Get historical data from JSON storage
+        history = await storage.get_stock_history(symbol.upper(), days)
         
         return {
             "symbol": symbol.upper(),
@@ -101,7 +68,7 @@ async def get_stock_history(
 async def get_watchlist():
     """Get the complete stock watchlist"""
     try:
-        watchlist = data_collector.get_watchlist()
+        watchlist = await data_collector.get_watchlist()
         
         return {
             "total_stocks": len(watchlist["stable"]) + len(watchlist["risky"]),
@@ -112,7 +79,8 @@ async def get_watchlist():
             "risky_stocks": {
                 "count": len(watchlist["risky"]),
                 "symbols": watchlist["risky"]
-            }
+            },
+            "last_updated": watchlist.get("last_updated")
         }
         
     except Exception as e:
@@ -133,14 +101,14 @@ async def get_stocks_by_category(category: str):
                 detail="Category must be either 'stable' or 'risky'"
             )
         
-        watchlist = data_collector.get_watchlist()
+        watchlist = await data_collector.get_watchlist()
         category_key = "stable" if category_upper == "STABLE" else "risky"
         symbols = watchlist[category_key]
         
         # Get latest data for all symbols in category
         latest_data = []
         for symbol in symbols:
-            stock_data = await opensearch_client.get_latest_stock_data(symbol)
+            stock_data = await storage.get_latest_stock_data(symbol)
             if stock_data:
                 latest_data.append(stock_data)
         
@@ -166,33 +134,19 @@ async def get_trending_stocks(
 ):
     """Get trending stocks based on recent price movements"""
     try:
-        # Get all latest stock data
-        current_month = datetime.now().strftime("%Y-%m")
-        index_name = f"daily-stock-data-{current_month}"
+        # Get latest data from today
+        today = datetime.now().strftime("%Y-%m-%d")
+        stocks_today = await storage.get_stocks_by_date(today)
         
-        # Query for latest data from all stocks
-        query = {
-            "query": {
-                "range": {
-                    "date": {
-                        "gte": "now-1d/d"
-                    }
-                }
-            },
-            "sort": [
-                {"price_data.change_percent": {"order": "desc"}}
-            ],
-            "size": limit
-        }
-        
-        response = opensearch_client.client.search(
-            index=index_name,
-            body=query
-        )
+        # Sort by change percentage and limit results
+        trending_stocks = sorted(
+            stocks_today, 
+            key=lambda x: x.get('price_data', {}).get('change_percent', 0), 
+            reverse=True
+        )[:limit]
         
         trending = []
-        for hit in response['hits']['hits']:
-            stock_data = hit['_source']
+        for stock_data in trending_stocks:
             trending.append({
                 "symbol": stock_data['symbol'],
                 "change_percent": stock_data['price_data']['change_percent'],
@@ -218,7 +172,7 @@ async def get_trending_stocks(
 async def get_stock_recommendation(symbol: str):
     """Get current AI recommendation for a specific stock"""
     try:
-        stock_data = await opensearch_client.get_latest_stock_data(symbol.upper())
+        stock_data = await storage.get_latest_stock_data(symbol.upper())
         
         if not stock_data:
             raise HTTPException(

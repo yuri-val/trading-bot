@@ -11,7 +11,7 @@ from ..models.reports import (
 )
 from ..config import settings
 from .analyzer import LLMAnalyzer
-from .opensearch_client import OpenSearchClient
+from .json_storage import JSONStorage
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class ReportGenerator:
     def __init__(self):
         self.analyzer = LLMAnalyzer()
-        self.opensearch = OpenSearchClient()
+        self.storage = JSONStorage()
     
     async def create_daily_report(self, analyzed_stocks: List[StockData]) -> DailyReport:
         """Create daily investment report"""
@@ -53,8 +53,8 @@ class ReportGenerator:
                 content=report_content
             )
             
-            # Save to OpenSearch
-            await self.opensearch.index_daily_report(report)
+            # Save to JSON storage
+            await self.storage.save_daily_report(report)
             
             logger.info(f"Daily report created successfully: {report.report_id}")
             return report
@@ -213,7 +213,7 @@ class ReportGenerator:
         """Create 30-day summary report"""
         try:
             # Get daily reports from the period
-            daily_reports = await self.opensearch.search_reports(start_date, end_date, "DAILY")
+            daily_reports = await self.storage.get_daily_reports_range(start_date, end_date)
             
             if not daily_reports:
                 return self._create_empty_summary_report(start_date, end_date)
@@ -253,8 +253,8 @@ class ReportGenerator:
                 content=summary_content
             )
             
-            # Save to OpenSearch
-            await self.opensearch.index_summary_report(report)
+            # Save to JSON storage
+            await self.storage.save_summary_report(report)
             
             logger.info(f"Summary report created: {report.report_id}")
             return report

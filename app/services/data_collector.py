@@ -12,6 +12,8 @@ from ..models.stock_data import (
     StockData, PriceData, TechnicalIndicators, 
     FundamentalData, SentimentData, StockCategory
 )
+from .stock_list_collector import StockListCollector
+from .json_storage import JSONStorage
 
 logger = logging.getLogger(__name__)
 
@@ -20,12 +22,42 @@ class DataCollector:
     def __init__(self):
         self.av_key = settings.alpha_vantage_key
         self.news_api_key = settings.news_api_key
+        self.stock_collector = StockListCollector()
+        self.storage = JSONStorage()
         if self.av_key:
             self.ts = TimeSeries(key=self.av_key, output_format='pandas')
             self.ti = TechIndicators(key=self.av_key, output_format='pandas')
     
+    async def collect_daily_data(self) -> Dict[str, StockData]:
+        """Collect data for all stocks in the watchlist"""
+        # Update stock lists first
+        stock_lists = await self.stock_collector.update_stock_lists()
+        all_symbols = stock_lists["stable"] + stock_lists["risky"]
+        
+        logger.info(f"Collecting data for {len(all_symbols)} stocks")
+        
+        data = {}
+        for symbol in all_symbols:
+            try:
+                logger.info(f"Collecting data for {symbol}")
+                stock_data = await self._collect_single_stock(symbol, stock_lists)
+                if stock_data:
+                    # Save to storage immediately
+                    await self.storage.save_stock_data(stock_data)
+                    data[symbol] = stock_data
+                else:
+                    logger.warning(f"No data collected for {symbol}")
+            except Exception as e:
+                logger.error(f"Error collecting data for {symbol}: {str(e)}")
+                continue
+        
+        # Save updated stock lists
+        await self.stock_collector.save_lists_to_file()
+        
+        return data
+    
     async def collect_stock_data(self, symbols: List[str]) -> Dict[str, StockData]:
-        """Collect data for a list of stock symbols"""
+        """Collect data for a specific list of stock symbols"""
         data = {}
         
         for symbol in symbols:
@@ -42,7 +74,7 @@ class DataCollector:
         
         return data
     
-    async def _collect_single_stock(self, symbol: str) -> Optional[StockData]:
+    async def _collect_single_stock(self, symbol: str, stock_lists: Optional[Dict] = None) -> Optional[StockData]:
         """Collect all data for a single stock"""
         try:
             # Get basic price data from Yahoo Finance
@@ -70,7 +102,7 @@ class DataCollector:
             sentiment_data = await self._get_sentiment_data(symbol)
             
             # Determine category
-            category = self._determine_category(symbol)
+            category = self._determine_category(symbol, stock_lists)
             
             return StockData(
                 symbol=symbol,
@@ -222,19 +254,41 @@ class DataCollector:
         
         return total_score / len(articles) if articles else 0.5
     
-    def _determine_category(self, symbol: str) -> StockCategory:
-        """Determine if stock is stable or risky based on configuration"""
-        if symbol in settings.stable_stocks:
+    def _determine_category(self, symbol: str, stock_lists: Optional[Dict] = None) -> StockCategory:
+        """Determine if stock is stable or risky based on dynamic lists"""
+        if stock_lists:
+            if symbol in stock_lists.get("stable", []):
+                return StockCategory.STABLE
+            elif symbol in stock_lists.get("risky", []):
+                return StockCategory.RISKY
+        
+        # Fallback: try to get current lists from collector
+        current_lists = self.stock_collector.get_current_lists()
+        if symbol in current_lists.get("stable", []):
             return StockCategory.STABLE
-        elif symbol in settings.risky_stocks:
+        elif symbol in current_lists.get("risky", []):
             return StockCategory.RISKY
-        else:
-            # Default categorization logic
-            return StockCategory.STABLE
+        
+        # Default to stable for unknown stocks
+        return StockCategory.STABLE
     
-    def get_watchlist(self) -> Dict[str, List[str]]:
-        """Get the complete watchlist"""
+    async def get_watchlist(self) -> Dict[str, List[str]]:
+        """Get the complete watchlist from dynamic stock collector"""
+        current_lists = self.stock_collector.get_current_lists()
+        
+        # If lists are empty, try to load from file or update
+        if not current_lists["stable"] and not current_lists["risky"]:
+            # Try loading from file first
+            loaded = await self.stock_collector.load_lists_from_file()
+            if loaded:
+                # Get the updated lists after loading from file
+                current_lists = self.stock_collector.get_current_lists()
+            else:
+                # If no saved file, update from internet
+                current_lists = await self.stock_collector.update_stock_lists()
+        
         return {
-            "stable": settings.stable_stocks,
-            "risky": settings.risky_stocks
+            "stable": current_lists["stable"],
+            "risky": current_lists["risky"],
+            "last_updated": current_lists.get("last_updated")
         }

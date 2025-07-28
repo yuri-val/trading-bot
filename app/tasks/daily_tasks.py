@@ -7,7 +7,7 @@ from typing import List
 from ..config import settings
 from ..services.data_collector import DataCollector
 from ..services.analyzer import LLMAnalyzer
-from ..services.opensearch_client import OpenSearchClient
+from ..services.json_storage import JSONStorage
 from ..services.report_generator import ReportGenerator
 from ..models.stock_data import StockData
 
@@ -47,18 +47,16 @@ def daily_analysis_task(self):
             # Initialize services
             collector = DataCollector()
             analyzer = LLMAnalyzer()
-            opensearch = OpenSearchClient()
+            storage = JSONStorage()
             report_gen = ReportGenerator()
             
-            # Get watchlist
-            watchlist = collector.get_watchlist()
-            all_symbols = watchlist['stable'] + watchlist['risky']
+            # Collect data for all stocks (this will also update stock lists)
+            logger.info("Phase 1: Collecting stock data and updating stock lists...")
+            stock_data = await collector.collect_daily_data()
             
-            logger.info(f"Analyzing {len(all_symbols)} stocks: {len(watchlist['stable'])} stable, {len(watchlist['risky'])} risky")
-            
-            # Collect data for all stocks
-            logger.info("Phase 1: Collecting stock data...")
-            stock_data = await collector.collect_stock_data(all_symbols)
+            # Get the updated watchlist for logging
+            watchlist = await collector.get_watchlist()
+            logger.info(f"Analyzed {len(stock_data)} stocks: {len(watchlist['stable'])} stable, {len(watchlist['risky'])} risky")
             
             if not stock_data:
                 logger.error("No stock data collected. Aborting analysis.")
@@ -79,8 +77,9 @@ def daily_analysis_task(self):
                         data.ai_analysis = analysis
                         analyzed_stocks.append(data)
                         
-                        # Index stock data to OpenSearch
-                        await opensearch.index_stock_data(data)
+                        # Data is already saved to JSON storage in collect_daily_data
+                        # Just update with AI analysis
+                        await storage.save_stock_data(data)
                         
                         logger.info(f"✓ {symbol}: {analysis.recommendation.value} "
                                   f"(confidence: {analysis.confidence_level:.2f})")
@@ -153,7 +152,7 @@ def generate_summary_report_task(self, start_date: str = None, end_date: str = N
             logger.info(f"[{datetime.now()}] Starting summary report generation...")
             
             # Initialize services
-            opensearch = OpenSearchClient()
+            storage = JSONStorage()
             report_gen = ReportGenerator()
             
             # Use provided dates or default to last 30 days
@@ -239,7 +238,7 @@ def health_check_task():
             "celery_worker": "healthy",
             "timestamp": datetime.now().isoformat(),
             "redis_connection": "unknown",
-            "opensearch_status": "unknown"
+            "storage_status": "unknown"
         }
         
         # Test Redis connection (Celery broker)
@@ -249,21 +248,13 @@ def health_check_task():
         except Exception as e:
             checks["redis_connection"] = f"error: {str(e)}"
         
-        # Test OpenSearch connection
-        async def test_opensearch():
-            try:
-                opensearch = OpenSearchClient()
-                health = await opensearch.get_health_status()
-                return health.get("status", "unknown")
-            except Exception as e:
-                return f"error: {str(e)}"
-        
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+        # Test JSON storage
         try:
-            checks["opensearch_status"] = loop.run_until_complete(test_opensearch())
-        finally:
-            loop.close()
+            storage = JSONStorage() 
+            storage_health = storage.get_health_status()
+            checks["storage_status"] = storage_health.get("status", "unknown")
+        except Exception as e:
+            checks["storage_status"] = f"error: {str(e)}"
         
         return checks
         

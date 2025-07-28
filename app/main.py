@@ -5,7 +5,8 @@ import logging
 
 from .config import settings
 from .api import stocks, reports
-from .services.opensearch_client import OpenSearchClient
+from .services.json_storage import JSONStorage
+from .services.data_collector import DataCollector
 
 # Configure logging
 logging.basicConfig(
@@ -37,7 +38,8 @@ app.include_router(stocks.router)
 app.include_router(reports.router)
 
 # Initialize services
-opensearch_client = OpenSearchClient()
+storage = JSONStorage()
+data_collector = DataCollector()
 
 
 @app.get("/")
@@ -60,8 +62,11 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     try:
-        # Check OpenSearch connection
-        opensearch_health = await opensearch_client.get_health_status()
+        # Check JSON storage health
+        storage_health = storage.get_health_status()
+        
+        # Get current watchlist info
+        watchlist = await data_collector.get_watchlist()
         
         # Basic system health
         system_health = {
@@ -69,23 +74,21 @@ async def health_check():
             "timestamp": datetime.now().isoformat(),
             "services": {
                 "api": "operational",
-                "opensearch": opensearch_health.get("status", "unknown")
+                "storage": storage_health.get("status", "unknown")
             },
             "configuration": {
-                "stable_stocks_count": len(settings.stable_stocks),
-                "risky_stocks_count": len(settings.risky_stocks),
+                "stable_stocks_count": len(watchlist["stable"]),
+                "risky_stocks_count": len(watchlist["risky"]),
                 "stable_allocation": settings.stable_investment,
-                "risky_allocation": settings.risky_investment
+                "risky_allocation": settings.risky_investment,
+                "stock_lists_last_updated": watchlist.get("last_updated")
             }
         }
         
         # Determine overall health
-        if opensearch_health.get("status") == "red":
+        if storage_health.get("status") == "error":
             system_health["status"] = "degraded"
-            system_health["warnings"] = ["OpenSearch cluster health is red"]
-        elif opensearch_health.get("status") == "yellow":
-            system_health["status"] = "warning"
-            system_health["warnings"] = ["OpenSearch cluster health is yellow"]
+            system_health["warnings"] = ["JSON storage system issues"]
         
         return system_health
         
@@ -104,10 +107,13 @@ async def health_check():
 @app.get("/api/v1/config")
 async def get_config():
     """Get system configuration (non-sensitive data only)"""
+    watchlist = await data_collector.get_watchlist()
+    
     return {
         "watchlist": {
-            "stable_stocks": settings.stable_stocks,
-            "risky_stocks": settings.risky_stocks
+            "stable_stocks": watchlist["stable"],
+            "risky_stocks": watchlist["risky"],
+            "last_updated": watchlist.get("last_updated")
         },
         "investment_allocation": {
             "stable_amount": settings.stable_investment,
@@ -117,7 +123,9 @@ async def get_config():
         "analysis_settings": {
             "confidence_threshold": settings.confidence_threshold,
             "max_news_articles": settings.max_news_articles,
-            "analysis_timeout": settings.analysis_timeout
+            "analysis_timeout": settings.analysis_timeout,
+            "max_stable_stocks": settings.max_stable_stocks,
+            "max_risky_stocks": settings.max_risky_stocks
         }
     }
 
@@ -131,11 +139,15 @@ async def get_system_status():
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
         
         # Check for today's report
-        todays_report = await opensearch_client.get_daily_report(today)
-        yesterdays_report = await opensearch_client.get_daily_report(yesterday)
+        todays_report = await storage.get_daily_report(today)
+        yesterdays_report = await storage.get_daily_report(yesterday)
         
-        # Get OpenSearch health
-        opensearch_health = await opensearch_client.get_health_status()
+        # Get storage stats
+        storage_stats = await storage.get_storage_stats()
+        storage_health = storage.get_health_status()
+        
+        # Get current watchlist
+        watchlist = await data_collector.get_watchlist()
         
         return {
             "system_time": datetime.now().isoformat(),
@@ -144,10 +156,12 @@ async def get_system_status():
                 "yesterdays_report_available": yesterdays_report is not None,
                 "last_analysis": todays_report.get('date') if todays_report else yesterdays_report.get('date') if yesterdays_report else None
             },
-            "database_status": opensearch_health,
+            "storage_status": storage_health,
+            "storage_stats": storage_stats,
             "api_configuration": {
-                "total_tracked_stocks": len(settings.stable_stocks) + len(settings.risky_stocks),
-                "investment_strategy": f"${settings.stable_investment} stable + ${settings.risky_investment} risky"
+                "total_tracked_stocks": len(watchlist["stable"]) + len(watchlist["risky"]),
+                "investment_strategy": f"${settings.stable_investment} stable + ${settings.risky_investment} risky",
+                "stock_lists_last_updated": watchlist.get("last_updated")
             }
         }
         
@@ -185,15 +199,29 @@ async def internal_error_handler(request, exc):
 async def startup_event():
     """Initialize services on startup"""
     logger.info("Trading Bot API starting up...")
-    logger.info(f"Tracking {len(settings.stable_stocks)} stable and {len(settings.risky_stocks)} risky stocks")
+    
+    # Check for existing stock lists (non-blocking)
+    try:
+        # Try to load existing lists without triggering internet updates
+        loaded = await data_collector.stock_collector.load_lists_from_file()
+        if loaded:
+            current_lists = data_collector.stock_collector.get_current_lists()
+            logger.info(f"Loaded existing stock lists: {len(current_lists['stable'])} stable, {len(current_lists['risky'])} risky stocks")
+            if current_lists.get('last_updated'):
+                logger.info(f"Stock lists last updated: {current_lists['last_updated']}")
+        else:
+            logger.info("No existing stock lists found - will be updated during first daily analysis")
+    except Exception as e:
+        logger.warning(f"Could not load existing stock lists: {str(e)}")
+    
     logger.info(f"Investment allocation: ${settings.stable_investment} stable, ${settings.risky_investment} risky")
     
-    # Test OpenSearch connection
+    # Test storage health
     try:
-        health = await opensearch_client.get_health_status()
-        logger.info(f"OpenSearch status: {health.get('status', 'unknown')}")
+        health = storage.get_health_status()
+        logger.info(f"JSON storage status: {health.get('status', 'unknown')}")
     except Exception as e:
-        logger.warning(f"OpenSearch connection issue: {str(e)}")
+        logger.warning(f"Storage system issue: {str(e)}")
 
 
 # Shutdown event
@@ -201,6 +229,13 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Trading Bot API shutting down...")
+    
+    # Optional: perform cleanup tasks
+    try:
+        # Clean up old data if needed
+        await storage.cleanup_old_data()
+    except Exception as e:
+        logger.warning(f"Cleanup warning: {str(e)}")
 
 
 if __name__ == "__main__":

@@ -9,11 +9,6 @@ class Settings(BaseSettings):
     alpha_vantage_key: str = ""
     news_api_key: str = ""
     
-    # Database Configuration
-    opensearch_host: str = "localhost"
-    opensearch_port: int = 9200
-    opensearch_use_ssl: bool = False
-    
     # Redis Configuration
     redis_host: str = "localhost"
     redis_port: int = 6379
@@ -24,19 +19,10 @@ class Settings(BaseSettings):
     api_port: int = 8000
     debug: bool = False
     
-    # Stock Lists
-    stable_stocks: List[str] = [
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA",
-        "SPY", "QQQ", "VTI", "VOO", "SCHD",
-        "JNJ", "PG", "KO", "WMT", "HD",
-        "JPM", "BAC", "BRK-B", "V", "MA"
-    ]
-    
-    risky_stocks: List[str] = [
-        "TSLA", "PLTR", "SNOW", "ZM", "UPST",
-        "ROKU", "DKNG", "COIN", "TQQQ", "SOXL",
-        "ARKK", "SPXL", "TECL", "RIVN", "META"
-    ]
+    # Stock collection settings
+    max_stable_stocks: int = 25
+    max_risky_stocks: int = 15
+    stock_validation_volume_threshold: int = 100000
     
     # Investment Amounts
     stable_investment: int = 200
@@ -50,6 +36,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignore extra environment variables (like old OpenSearch vars)
 
 
 settings = Settings()
