@@ -138,7 +138,7 @@ function getConfidenceColor(confidence) {
 function showLoading(elementId) {
     const element = document.getElementById(elementId);
     if (element) {
-        element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+        element.innerHTML = '<i class="fas fa-hourglass"></i> Loading...';
         element.classList.add('loading');
     }
 }

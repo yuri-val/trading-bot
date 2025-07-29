@@ -400,7 +400,7 @@ class TradingBotApp {
 
     async analyzeStockQuick(symbol) {
         const resultDiv = document.getElementById('stock-analysis-result');
-        resultDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing ' + symbol + '...';
+        resultDiv.innerHTML = '<i class="fas fa-search"></i> Analyzing ' + symbol + '...';
         
         try {
             const [analysis, recommendation] = await Promise.all([
