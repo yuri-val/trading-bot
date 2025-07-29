@@ -466,27 +466,143 @@ class TradingBotApp {
             document.getElementById('latest-report').innerHTML = `
                 <div class="report-content">
                     <div class="report-header">
-                        <h4>Daily Report - ${formatDate(report.date)}</h4>
-                    </div>
-                    
-                    <div class="report-summary">
-                        <div class="summary-item">
-                            <strong>Analyzed Stocks:</strong> ${report.analyzed_stocks_count || 0}
+                        <div class="report-title">
+                            <h4><i class="fas fa-file-alt"></i> Daily Report - ${formatDate(report.date)}</h4>
+                            <span class="report-id">${report.report_id}</span>
                         </div>
-                        <div class="summary-item">
-                            <strong>Processing Time:</strong> ${report.processing_time_minutes || 0} minutes
-                        </div>
-                        <div class="summary-item">
-                            <strong>Data Quality:</strong> ${formatPercentage(report.data_quality_score || 0)}
+                        <div class="report-meta">
+                            <span class="report-type">${report.report_type || 'DAILY'}</span>
+                            <span class="retrieved-time">Retrieved: ${formatDate(reportData.retrieved_at)}</span>
                         </div>
                     </div>
 
-                    ${report.market_risks ? `
-                        <div class="risks-section">
-                            <h5>Market Risks</h5>
-                            <ul>
-                                ${report.market_risks.map(risk => `<li>${risk}</li>`).join('')}
-                            </ul>
+                    <!-- Market Overview Section -->
+                    ${report.market_overview ? `
+                        <div class="section market-overview-section">
+                            <h5><i class="fas fa-globe"></i> Market Overview</h5>
+                            <div class="market-overview-content">
+                                <div class="sentiment-indicator sentiment-${(report.market_overview.market_sentiment || '').toLowerCase()}">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span>Market Sentiment: <strong>${report.market_overview.market_sentiment || 'UNKNOWN'}</strong></span>
+                                </div>
+                                
+                                ${report.market_overview.market_themes && report.market_overview.market_themes.length > 0 ? `
+                                    <div class="market-themes">
+                                        <h6>Key Market Themes:</h6>
+                                        <div class="theme-tags">
+                                            ${report.market_overview.market_themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Recommendations Section -->
+                    <div class="section recommendations-section">
+                        <h5><i class="fas fa-star"></i> Investment Recommendations</h5>
+                        <div class="recommendations-grid">
+                            <!-- Stable Recommendation -->
+                            ${report.stable_recommendation ? `
+                                <div class="recommendation-card stable-rec">
+                                    <div class="rec-header">
+                                        <div class="rec-icon"><i class="fas fa-shield-alt"></i></div>
+                                        <div class="rec-info">
+                                            <h6>Stable Investment</h6>
+                                            <div class="rec-symbol">${report.stable_recommendation.symbol}</div>
+                                        </div>
+                                        <div class="rec-allocation">${formatCurrency(report.stable_recommendation.allocation)}</div>
+                                    </div>
+                                    <div class="rec-body">
+                                        <div class="confidence-section">
+                                            <span>Confidence: ${formatPercentage(report.stable_recommendation.confidence)}</span>
+                                            <div class="confidence-bar">
+                                                <div class="confidence-fill" style="width: ${(report.stable_recommendation.confidence || 0) * 100}%; background-color: ${getConfidenceColor(report.stable_recommendation.confidence)}"></div>
+                                            </div>
+                                        </div>
+                                        <div class="risk-section">
+                                            <span>Max Risk: ${formatPercentage(report.stable_recommendation.max_risk)}</span>
+                                        </div>
+                                        <div class="reasoning">
+                                            <strong>Analysis:</strong>
+                                            <p>${report.stable_recommendation.reasoning}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : '<div class="no-recommendation">No stable recommendation available</div>'}
+
+                            <!-- Risky Recommendation -->
+                            ${report.risky_recommendation ? `
+                                <div class="recommendation-card risky-rec">
+                                    <div class="rec-header">
+                                        <div class="rec-icon"><i class="fas fa-rocket"></i></div>
+                                        <div class="rec-info">
+                                            <h6>Risky Investment</h6>
+                                            <div class="rec-symbol">${report.risky_recommendation.symbol}</div>
+                                        </div>
+                                        <div class="rec-allocation">${formatCurrency(report.risky_recommendation.allocation)}</div>
+                                    </div>
+                                    <div class="rec-body">
+                                        <div class="confidence-section">
+                                            <span>Confidence: ${formatPercentage(report.risky_recommendation.confidence)}</span>
+                                            <div class="confidence-bar">
+                                                <div class="confidence-fill" style="width: ${(report.risky_recommendation.confidence || 0) * 100}%; background-color: ${getConfidenceColor(report.risky_recommendation.confidence)}"></div>
+                                            </div>
+                                        </div>
+                                        <div class="risk-section">
+                                            <span>Max Risk: ${formatPercentage(report.risky_recommendation.max_risk)}</span>
+                                        </div>
+                                        <div class="reasoning">
+                                            <strong>Analysis:</strong>
+                                            <p>${report.risky_recommendation.reasoning}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : '<div class="no-recommendation">No risky recommendation available</div>'}
+                        </div>
+                    </div>
+
+                    <!-- Market Risks Section -->
+                    ${report.market_risks && report.market_risks.length > 0 ? `
+                        <div class="section risks-section">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Market Risks</h5>
+                            <div class="risks-list">
+                                ${report.market_risks.map(risk => `
+                                    <div class="risk-item">
+                                        <i class="fas fa-warning"></i>
+                                        <span>${risk}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Report Statistics -->
+                    <div class="section stats-section">
+                        <h5><i class="fas fa-chart-bar"></i> Report Statistics</h5>
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value">${report.analyzed_stocks_count || 0}</div>
+                                <div class="stat-label">Stocks Analyzed</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${Math.round((report.processing_time_minutes || 0) * 100) / 100}m</div>
+                                <div class="stat-label">Processing Time</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">${formatPercentage(report.data_quality_score || 0)}</div>
+                                <div class="stat-label">Data Quality</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Report Content -->
+                    ${report.content ? `
+                        <div class="section content-section">
+                            <h5><i class="fas fa-document"></i> Detailed Analysis</h5>
+                            <div class="report-text">
+                                ${this.formatReportContent(report.content)}
+                            </div>
                         </div>
                     ` : ''}
                 </div>
@@ -494,6 +610,19 @@ class TradingBotApp {
         } catch (error) {
             showError('Failed to load latest report', 'latest-report');
         }
+    }
+
+    formatReportContent(content) {
+        // Convert markdown-like content to HTML
+        return content
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold text
+            .replace(/### (.*)/g, '<h3>$1</h3>')              // Headers
+            .replace(/- \*\*(.*?)\*\*/g, '<li><strong>$1</strong></li>')  // Bold list items
+            .replace(/- (.*)/g, '<li>$1</li>')                // List items
+            .replace(/\n\n/g, '</p><p>')                      // Paragraphs
+            .replace(/\n/g, '<br>')                           // Line breaks
+            .replace(/^/, '<p>')                              // Start paragraph
+            .replace(/$/, '</p>');                            // End paragraph
     }
 
     async loadPerformance() {
