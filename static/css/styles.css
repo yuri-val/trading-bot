@@ -214,7 +214,7 @@ body {
 }
 
 .btn-sm {
-    padding: 6px 12px;
+    margin-left: 20px;
     font-size: 0.8rem;
 }
 
@@ -1276,6 +1276,70 @@ label {
 
 .report-text strong {
     color: #2c3e50;
+}
+
+/* Stock Watchlist Styles */
+.stock-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 15px 20px;
+}
+
+.stock-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    transition: all 0.2s ease;
+}
+
+.stock-item:hover {
+    background: #e3f2fd;
+    border-color: #3498db;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.1);
+}
+
+.stock-symbol {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+.stock-count {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-align: center;
+    font-weight: 500;
+}
+
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    color: #dee2e6;
+}
+
+.empty-state p {
+    margin: 0 0 5px 0;
+    font-weight: 500;
+}
+
+.empty-state small {
+    font-size: 0.85rem;
+    opacity: 0.8;
 }
 
 /* Responsive Design */

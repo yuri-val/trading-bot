@@ -349,38 +349,59 @@ class TradingBotApp {
         
         try {
             const watchlist = await api.getWatchlist();
+            console.log('Watchlist response:', watchlist); // Debug log
             
-            // Load stable stocks
-            const stableStocks = watchlist.stable || [];
-            document.getElementById('stable-stocks').innerHTML = `
-                <div class="stock-list">
-                    ${stableStocks.map(symbol => `
-                        <div class="stock-item" data-symbol="${symbol}">
-                            <span class="stock-symbol">${symbol}</span>
-                            <button class="btn btn-sm" onclick="app.analyzeStockQuick('${symbol}')">
-                                <i class="fas fa-chart-line"></i>
-                            </button>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="stock-count">${stableStocks.length} stocks</div>
-            `;
+            // Load stable stocks - handle multiple possible API response structures
+            const stableStocks = watchlist.stable_stocks?.symbols || watchlist.stable || [];
+            if (stableStocks.length > 0) {
+                document.getElementById('stable-stocks').innerHTML = `
+                    <div class="stock-list">
+                        ${stableStocks.map(symbol => `
+                            <div class="stock-item" data-symbol="${symbol}">
+                                <span class="stock-symbol">${symbol}</span>
+                                <button class="btn btn-sm" onclick="app.analyzeStockQuick('${symbol}')">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="stock-count">${stableStocks.length} stocks</div>
+                `;
+            } else {
+                document.getElementById('stable-stocks').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No stable stocks available</p>
+                        <small>Stocks will appear here after daily analysis</small>
+                    </div>
+                `;
+            }
 
-            // Load risky stocks
-            const riskyStocks = watchlist.risky || [];
-            document.getElementById('risky-stocks').innerHTML = `
-                <div class="stock-list">
-                    ${riskyStocks.map(symbol => `
-                        <div class="stock-item" data-symbol="${symbol}">
-                            <span class="stock-symbol">${symbol}</span>
-                            <button class="btn btn-sm" onclick="app.analyzeStockQuick('${symbol}')">
-                                <i class="fas fa-chart-line"></i>
-                            </button>
-                        </div>
-                    `).join('')}
-                </div>
-                <div class="stock-count">${riskyStocks.length} stocks</div>
-            `;
+            // Load risky stocks - handle multiple possible API response structures
+            const riskyStocks = watchlist.risky_stocks?.symbols || watchlist.risky || [];
+            if (riskyStocks.length > 0) {
+                document.getElementById('risky-stocks').innerHTML = `
+                    <div class="stock-list">
+                        ${riskyStocks.map(symbol => `
+                            <div class="stock-item" data-symbol="${symbol}">
+                                <span class="stock-symbol">${symbol}</span>
+                                <button class="btn btn-sm" onclick="app.analyzeStockQuick('${symbol}')">
+                                    <i class="fas fa-chart-line"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="stock-count">${riskyStocks.length} stocks</div>
+                `;
+            } else {
+                document.getElementById('risky-stocks').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-info-circle"></i>
+                        <p>No risky stocks available</p>
+                        <small>Stocks will appear here after daily analysis</small>
+                    </div>
+                `;
+            }
 
         } catch (error) {
             showError('Failed to load watchlist', 'stable-stocks');
