@@ -424,48 +424,187 @@ class TradingBotApp {
         resultDiv.innerHTML = '<i class="fas fa-search"></i> Analyzing ' + symbol + '...';
         
         try {
-            const [analysis, recommendation] = await Promise.all([
-                api.getStockAnalysis(symbol),
-                api.getStockRecommendation(symbol)
-            ]);
-
+            const analysis = await api.getStockAnalysis(symbol);
+            const stockData = analysis.data;
+            
             resultDiv.innerHTML = `
-                <div class="analysis-result">
+                <div class="detailed-analysis">
                     <div class="analysis-header">
-                        <h3>${symbol} Analysis</h3>
-                        <span class="analysis-timestamp">${formatDate(analysis.timestamp || new Date())}</span>
-                    </div>
-                    
-                    <div class="analysis-grid">
-                        <div class="analysis-card">
-                            <h4>Current Price</h4>
-                            <div class="price-info">
-                                <span class="current-price">${formatCurrency(analysis.current_price || 0)}</span>
-                                ${analysis.price_change ? `
-                                    <span class="price-change ${analysis.price_change >= 0 ? 'positive' : 'negative'}">
-                                        ${analysis.price_change >= 0 ? '+' : ''}${formatPercentage(analysis.price_change)}
-                                    </span>
-                                ` : ''}
-                            </div>
+                        <div class="stock-title">
+                            <h3>${stockData.symbol}</h3>
+                            <span class="category-badge ${stockData.category.toLowerCase()}">${stockData.category}</span>
                         </div>
-                        
-                        <div class="analysis-card">
-                            <h4>Recommendation</h4>
-                            <div class="recommendation-info">
-                                <span class="recommendation-action">${recommendation.recommendation || 'N/A'}</span>
-                                <span class="confidence" style="color: ${getConfidenceColor(recommendation.confidence || 0)}">
-                                    ${formatPercentage(recommendation.confidence || 0)} confidence
-                                </span>
+                        <div class="last-updated">
+                            Last Updated: ${formatDate(stockData.date)}
+                        </div>
+                    </div>
+
+                    <!-- Price Information Section -->
+                    <div class="section price-section">
+                        <h4><i class="fas fa-dollar-sign"></i> Price Information</h4>
+                        <div class="price-grid">
+                            <div class="price-card main-price">
+                                <div class="price-label">Current Price</div>
+                                <div class="price-value">${formatCurrency(stockData.price_data.close)}</div>
+                                <div class="price-change ${stockData.price_data.change_percent >= 0 ? 'positive' : 'negative'}">
+                                    ${stockData.price_data.change_percent >= 0 ? '+' : ''}${stockData.price_data.change_percent.toFixed(2)}%
+                                    (${formatCurrency(stockData.price_data.close - stockData.price_data.previous_close)})
+                                </div>
+                            </div>
+                            <div class="price-details">
+                                <div class="price-item">
+                                    <span class="label">Open:</span>
+                                    <span class="value">${formatCurrency(stockData.price_data.open)}</span>
+                                </div>
+                                <div class="price-item">
+                                    <span class="label">High:</span>
+                                    <span class="value">${formatCurrency(stockData.price_data.high)}</span>
+                                </div>
+                                <div class="price-item">
+                                    <span class="label">Low:</span>
+                                    <span class="value">${formatCurrency(stockData.price_data.low)}</span>
+                                </div>
+                                <div class="price-item">
+                                    <span class="label">Previous Close:</span>
+                                    <span class="value">${formatCurrency(stockData.price_data.previous_close)}</span>
+                                </div>
+                                <div class="price-item">
+                                    <span class="label">Volume:</span>
+                                    <span class="value">${stockData.price_data.volume.toLocaleString()}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    ${recommendation.reasoning ? `
-                        <div class="reasoning-section">
-                            <h4>Analysis Reasoning</h4>
-                            <p>${recommendation.reasoning}</p>
+                    <!-- AI Analysis Section -->
+                    ${stockData.ai_analysis ? `
+                        <div class="section ai-analysis-section">
+                            <h4><i class="fas fa-robot"></i> AI Analysis</h4>
+                            <div class="ai-analysis-grid">
+                                <div class="analysis-card">
+                                    <div class="card-header">
+                                        <h5>Recommendation</h5>
+                                        <span class="recommendation-badge ${stockData.ai_analysis.recommendation.toLowerCase()}">${stockData.ai_analysis.recommendation}</span>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="confidence-bar">
+                                            <span>Confidence: ${formatPercentage(stockData.ai_analysis.confidence_level)}</span>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" style="width: ${stockData.ai_analysis.confidence_level * 100}%; background-color: ${getConfidenceColor(stockData.ai_analysis.confidence_level)}"></div>
+                                            </div>
+                                        </div>
+                                        <div class="risk-score">
+                                            <span>Risk Score: ${formatPercentage(stockData.ai_analysis.risk_score)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="analysis-card">
+                                    <div class="card-header">
+                                        <h5>Technical Analysis</h5>
+                                    </div>
+                                    <div class="card-content">
+                                        <div class="tech-item">
+                                            <span class="tech-label">Trend Direction:</span>
+                                            <span class="trend-badge ${stockData.ai_analysis.trend_direction.toLowerCase()}">${stockData.ai_analysis.trend_direction}</span>
+                                        </div>
+                                        <div class="tech-item">
+                                            <span class="tech-label">Trend Strength:</span>
+                                            <span class="trend-strength">${(stockData.ai_analysis.trend_strength * 100).toFixed(1)}%</span>
+                                        </div>
+                                        ${stockData.ai_analysis.support_level ? `
+                                            <div class="tech-item">
+                                                <span class="tech-label">Support:</span>
+                                                <span class="support-level">${formatCurrency(stockData.ai_analysis.support_level)}</span>
+                                            </div>
+                                        ` : ''}
+                                        ${stockData.ai_analysis.resistance_level ? `
+                                            <div class="tech-item">
+                                                <span class="tech-label">Resistance:</span>
+                                                <span class="resistance-level">${formatCurrency(stockData.ai_analysis.resistance_level)}</span>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${stockData.ai_analysis.key_factors && stockData.ai_analysis.key_factors.length > 0 ? `
+                                <div class="key-factors">
+                                    <h5>Key Factors</h5>
+                                    <ul class="factors-list">
+                                        ${stockData.ai_analysis.key_factors.map(factor => `<li>${factor}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            ` : ''}
+
+                            ${stockData.ai_analysis.reasoning ? `
+                                <div class="reasoning">
+                                    <h5>Analysis Reasoning</h5>
+                                    <p>${stockData.ai_analysis.reasoning}</p>
+                                </div>
+                            ` : ''}
                         </div>
                     ` : ''}
+
+                    <!-- Sentiment & Fundamentals -->
+                    <div class="section fundamentals-section">
+                        <h4><i class="fas fa-chart-bar"></i> Market Data</h4>
+                        <div class="fundamentals-grid">
+                            <!-- Sentiment Data -->
+                            <div class="data-card">
+                                <h5>Market Sentiment</h5>
+                                <div class="sentiment-items">
+                                    <div class="sentiment-item">
+                                        <span class="label">News Sentiment:</span>
+                                        <span class="value">${(stockData.sentiment_data.news_sentiment_score * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="sentiment-item">
+                                        <span class="label">Social Sentiment:</span>
+                                        <span class="value">${(stockData.sentiment_data.social_sentiment * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div class="sentiment-item">
+                                        <span class="label">News Articles:</span>
+                                        <span class="value">${stockData.sentiment_data.news_articles_count}</span>
+                                    </div>
+                                    <div class="sentiment-item">
+                                        <span class="label">Analyst Rating:</span>
+                                        <span class="analyst-rating ${stockData.sentiment_data.analyst_rating.toLowerCase()}">${stockData.sentiment_data.analyst_rating}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Fundamental Data -->
+                            <div class="data-card">
+                                <h5>Fundamentals</h5>
+                                <div class="fundamental-items">
+                                    <div class="fundamental-item">
+                                        <span class="label">P/E Ratio:</span>
+                                        <span class="value">${stockData.fundamental_data.pe_ratio || 'N/A'}</span>
+                                    </div>
+                                    <div class="fundamental-item">
+                                        <span class="label">Market Cap:</span>
+                                        <span class="value">${stockData.fundamental_data.market_cap || 'N/A'}</span>
+                                    </div>
+                                    <div class="fundamental-item">
+                                        <span class="label">Dividend Yield:</span>
+                                        <span class="value">${stockData.fundamental_data.dividend_yield ? formatPercentage(stockData.fundamental_data.dividend_yield) : 'N/A'}</span>
+                                    </div>
+                                    <div class="fundamental-item">
+                                        <span class="label">EPS (TTM):</span>
+                                        <span class="value">${stockData.fundamental_data.eps_ttm || 'N/A'}</span>
+                                    </div>
+                                    <div class="fundamental-item">
+                                        <span class="label">Revenue Growth:</span>
+                                        <span class="value">${stockData.fundamental_data.revenue_growth ? formatPercentage(stockData.fundamental_data.revenue_growth) : 'N/A'}</span>
+                                    </div>
+                                    <div class="fundamental-item">
+                                        <span class="label">Debt/Equity:</span>
+                                        <span class="value">${stockData.fundamental_data.debt_to_equity || 'N/A'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         } catch (error) {

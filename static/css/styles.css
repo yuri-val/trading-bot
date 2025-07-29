@@ -1342,6 +1342,392 @@ label {
     opacity: 0.8;
 }
 
+/* Detailed Stock Analysis Styles */
+.detailed-analysis {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.analysis-header {
+    background: linear-gradient(135deg, #3498db, #2c3e50);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stock-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.stock-title h3 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.category-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.category-badge.stable {
+    background: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.category-badge.risky {
+    background: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.last-updated {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Price Section */
+.price-section {
+    padding: 0;
+}
+
+.price-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .price-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.price-card.main-price {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    border: 2px solid #dee2e6;
+}
+
+.price-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.price-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-bottom: 8px;
+}
+
+.price-change {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.price-change.positive {
+    color: #28a745;
+}
+
+.price-change.negative {
+    color: #dc3545;
+}
+
+.price-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.price-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.price-item .label {
+    font-weight: 500;
+    color: #6c757d;
+}
+
+.price-item .value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* AI Analysis Section */
+.ai-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 768px) {
+    .ai-analysis-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.analysis-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.card-header {
+    background: #fff;
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h5 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.recommendation-badge {
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.recommendation-badge.buy {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid #28a745;
+}
+
+.recommendation-badge.hold {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+    border: 1px solid #ffc107;
+}
+
+.recommendation-badge.sell {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+
+.card-content {
+    padding: 15px;
+}
+
+.confidence-bar {
+    margin-bottom: 15px;
+}
+
+.confidence-bar span {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.risk-score {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.tech-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.tech-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.trend-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.trend-badge.upward {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.trend-badge.downward {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.trend-badge.sideways {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+.trend-strength {
+    font-weight: 600;
+    color: #3498db;
+}
+
+.support-level, .resistance-level {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Key Factors */
+.key-factors {
+    padding: 0 20px 20px 20px;
+}
+
+.key-factors h5 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+}
+
+.factors-list {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.factors-list li {
+    margin-bottom: 8px;
+    color: #555;
+    line-height: 1.4;
+}
+
+/* Reasoning */
+.reasoning {
+    padding: 0 20px 20px 20px;
+}
+
+.reasoning h5 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+}
+
+.reasoning p {
+    margin: 0;
+    line-height: 1.6;
+    color: #555;
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #3498db;
+}
+
+/* Fundamentals Section */
+.fundamentals-section {
+    padding: 0;
+}
+
+.fundamentals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .fundamentals-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.data-card {
+    background: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.data-card h5 {
+    background: #fff;
+    margin: 0;
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    color: #2c3e50;
+}
+
+.sentiment-items, .fundamental-items {
+    padding: 15px;
+}
+
+.sentiment-item, .fundamental-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.sentiment-item:last-child, .fundamental-item:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.sentiment-item .label, .fundamental-item .label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.sentiment-item .value, .fundamental-item .value {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.analyst-rating {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.analyst-rating.buy {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+}
+
+.analyst-rating.neutral {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+.analyst-rating.sell {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .container {
