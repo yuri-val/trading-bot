@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime, timedelta
 import logging
 
@@ -38,6 +39,11 @@ app.add_middleware(
 app.include_router(stocks.router)
 app.include_router(reports.router)
 
+# Mount static files for the web UI (if directory exists)
+import os
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 # Initialize services
 storage = JSONStorage()
 data_collector = DataCollector()
@@ -45,7 +51,28 @@ data_collector = DataCollector()
 
 @app.get("/")
 async def root():
-    """Root endpoint with API information"""
+    """Serve the main UI"""
+    if os.path.exists('static/index.html'):
+        return FileResponse('static/index.html')
+    elif os.path.exists('app/templates/dashboard.html'):
+        return FileResponse('app/templates/dashboard.html')
+    else:
+        return {
+            "message": "Trading Bot API",
+            "version": "1.0.0", 
+            "description": "Automated stock analysis and investment recommendations",
+            "note": "Web UI not available - templates not found",
+            "endpoints": {
+                "docs": "/docs",
+                "stocks": "/api/v1/stocks",
+                "reports": "/api/v1/reports",
+                "health": "/health"
+            }
+        }
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
     return {
         "message": "Trading Bot API",
         "version": "1.0.0",
@@ -54,7 +81,8 @@ async def root():
             "docs": "/docs",
             "stocks": "/api/v1/stocks",
             "reports": "/api/v1/reports",
-            "health": "/health"
+            "health": "/health",
+            "ui": "/"
         }
     }
 

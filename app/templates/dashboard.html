@@ -1,0 +1,2024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Bot Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .header h1 i {
+            color: #3498db;
+            margin-right: 10px;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            display: inline-block;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-button:hover, .tab-button.active {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            background: rgba(52, 152, 219, 0.05);
+        }
+
+        .card-header h3 {
+            color: #2c3e50;
+            font-size: 1.2rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header i {
+            color: #3498db;
+        }
+
+        .card-body {
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            color: #7f8c8d;
+            font-style: italic;
+            flex-direction: column;
+        }
+
+        .loading i {
+            margin-right: 10px;
+            opacity: 0.7;
+        }
+
+        .error-message {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-radius: 8px;
+            border: 1px solid rgba(220, 53, 69, 0.3);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 18px 20px;
+            background: rgba(52, 152, 219, 0.06);
+            border-radius: 12px;
+            border-left: 4px solid #3498db;
+            transition: all 0.2s ease;
+        }
+
+        .info-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+            transform: translateX(2px);
+        }
+
+        .info-item i {
+            color: #3498db;
+            font-size: 1.3rem;
+            min-width: 20px;
+        }
+
+        .info-item div {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .info-item strong {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .info-item span {
+            color: #6c7b7d;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #2980b9, #1f5f8b);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .api-endpoint {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+
+        .method {
+            color: #28a745;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method.post {
+            color: #007bff;
+        }
+
+        /* Report Visualization Styles */
+        .report-container {
+            display: grid;
+            gap: 25px;
+        }
+
+        .report-header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .report-header-section h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.5rem;
+        }
+
+        .report-meta {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .meta-item strong {
+            display: block;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .recommendation-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #3498db;
+            transition: transform 0.3s ease;
+        }
+
+        .recommendation-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .recommendation-card.stable {
+            border-left-color: #28a745;
+        }
+
+        .recommendation-card.risky {
+            border-left-color: #dc3545;
+        }
+
+        .recommendation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .recommendation-symbol {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .recommendation-type {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .recommendation-type.stable {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .recommendation-type.risky {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        .recommendation-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 10px;
+        }
+
+        .metric-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .confidence-meter {
+            background: rgba(0, 0, 0, 0.1);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.8s ease;
+        }
+
+        .confidence-fill.stable {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+
+        .confidence-fill.risky {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+
+        .reasoning-section {
+            background: rgba(52, 152, 219, 0.05);
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 15px;
+        }
+
+        .reasoning-section h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1rem;
+        }
+
+        .reasoning-text {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .market-overview-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .market-sentiment-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .market-sentiment-badge.neutral {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .market-sentiment-badge.bullish {
+            background: rgba(40, 167, 69, 0.2);
+            color: #28a745;
+        }
+
+        .market-sentiment-badge.bearish {
+            background: rgba(220, 53, 69, 0.2);
+            color: #dc3545;
+        }
+
+        .market-themes {
+            margin-top: 20px;
+        }
+
+        .theme-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .theme-tag {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .risks-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #dc3545;
+        }
+
+        .risk-items {
+            list-style: none;
+            padding: 0;
+            margin-top: 15px;
+        }
+
+        .risk-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: rgba(220, 53, 69, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #dc3545;
+        }
+
+        .risk-item i {
+            color: #dc3545;
+        }
+
+        .stats-summary {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            border-radius: 12px;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3498db;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* Summary Reports Tab Styles */
+        .summary-form-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #3498db;
+        }
+
+        .form-container {
+            margin-top: 20px;
+        }
+
+        .form-group-inline {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+            margin-bottom: 15px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+
+        .date-range-info {
+            padding: 12px 20px;
+            background: rgba(52, 152, 219, 0.1);
+            border-radius: 8px;
+            color: #3498db;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+        }
+
+        .quick-ranges {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .range-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            color: white;
+            border: none;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #7f8c8d, #6c7b7d);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(127, 140, 141, 0.4);
+        }
+
+        .recent-reports-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-report-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid #27ae60;
+        }
+
+        .summary-header {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .summary-header h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.4rem;
+        }
+
+        .summary-period {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .performance-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .performance-card {
+            background: linear-gradient(135deg, rgba(52, 152, 219, 0.1), rgba(52, 152, 219, 0.05));
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(52, 152, 219, 0.2);
+            transition: transform 0.3s ease;
+        }
+
+        .performance-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.2);
+        }
+
+        .performance-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #3498db;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .performance-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .top-performers-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 25px;
+        }
+
+        .performer-card {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .performer-card h4 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .performer-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .performer-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .performer-item:hover {
+            background: rgba(52, 152, 219, 0.05);
+            border-color: rgba(52, 152, 219, 0.3);
+        }
+
+        .performer-symbol {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .performer-count {
+            background: rgba(52, 152, 219, 0.1);
+            color: #3498db;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .market-insights {
+            background: rgba(27, 156, 252, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #1b9cfc;
+            margin-bottom: 20px;
+        }
+
+        .market-insights h4 {
+            color: #1b9cfc;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .insight-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .insight-item {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(27, 156, 252, 0.1);
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .insight-item:last-child {
+            border-bottom: none;
+        }
+
+        .insight-item:before {
+            content: "💡";
+            margin-right: 8px;
+        }
+
+        .outlook-section {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.1), rgba(142, 68, 173, 0.05));
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 4px solid #9b59b6;
+        }
+
+        .outlook-section h4 {
+            color: #9b59b6;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .outlook-text {
+            line-height: 1.7;
+            color: #555;
+            font-size: 1rem;
+        }
+
+        .generation-status {
+            background: rgba(39, 174, 96, 0.1);
+            color: #27ae60;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid rgba(39, 174, 96, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .generation-status.error {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+
+        .generation-status.warning {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border-color: rgba(255, 193, 7, 0.2);
+        }
+
+        /* Improved Recommendations Styles */
+        .recommendations-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .rec-card-compact {
+            padding: 20px;
+            border-radius: 14px;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .rec-card-compact:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .rec-card-compact.stable {
+            border-left: 4px solid #28a745;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.02), rgba(40, 167, 69, 0.01));
+        }
+
+        .rec-card-compact.risky {
+            border-left: 4px solid #dc3545;
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.02), rgba(220, 53, 69, 0.01));
+        }
+
+        .rec-header-compact {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .rec-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6c7b7d;
+        }
+
+        .rec-label i {
+            font-size: 1rem;
+        }
+
+        .rec-card-compact.stable .rec-label i {
+            color: #28a745;
+        }
+
+        .rec-card-compact.risky .rec-label i {
+            color: #dc3545;
+        }
+
+        .rec-symbol-large {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .rec-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .rec-amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #27ae60;
+        }
+
+        .rec-confidence-compact {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+        }
+
+        .rec-confidence-compact span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #6c7b7d;
+        }
+
+        .confidence-bar-small {
+            width: 80px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .confidence-fill-small {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+        }
+
+        .confidence-fill-small.stable {
+            background: linear-gradient(90deg, #28a745, #20c997);
+        }
+
+        .confidence-fill-small.risky {
+            background: linear-gradient(90deg, #dc3545, #fd7e14);
+        }
+
+        .rec-footer {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c7b7d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* Improved Watchlist Styles */
+        .watchlist-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .watchlist-section {
+            padding: 0;
+        }
+
+        .watchlist-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .watchlist-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+
+        .watchlist-count {
+            font-size: 0.9rem;
+            color: #6c7b7d;
+            font-weight: 500;
+        }
+
+        .stock-symbols {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .symbol-tag {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            text-align: center;
+            min-width: 45px;
+            transition: all 0.2s ease;
+        }
+
+        .symbol-tag:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .symbol-tag.stable {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+
+        .symbol-tag.risky {
+            background: linear-gradient(135deg, #dc3545, #fd7e14);
+        }
+
+        .more-count {
+            font-size: 0.8rem;
+            color: #6c7b7d;
+            font-style: italic;
+            font-weight: 500;
+            padding: 6px 8px;
+        }
+
+        .watchlist-footer {
+            margin-top: 10px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c7b7d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-chart-line"></i> Trading Bot Dashboard</h1>
+            <div class="status">
+                <i class="fas fa-circle"></i> <span id="status-text">Checking...</span>
+            </div>
+        </header>
+
+        <nav class="nav-tabs">
+            <button class="tab-button active" onclick="showTab('dashboard')">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </button>
+            <button class="tab-button" onclick="showTab('report')">
+                <i class="fas fa-file-alt"></i> Latest Report
+            </button>
+            <button class="tab-button" onclick="showTab('summary')">
+                <i class="fas fa-chart-pie"></i> Summary Reports
+            </button>
+            <button class="tab-button" onclick="showTab('api')">
+                <i class="fas fa-code"></i> API Explorer
+            </button>
+            <button class="tab-button" onclick="showTab('docs')">
+                <i class="fas fa-book"></i> Documentation
+            </button>
+        </nav>
+
+        <div id="dashboard" class="tab-content active">
+            <div class="grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-heartbeat"></i> System Status</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="system-info" class="loading">
+                            <i class="fas fa-circle-notch"></i> Loading system status...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-star"></i> Current Recommendations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="recommendations" class="loading">
+                            <i class="fas fa-clock"></i> Loading recommendations...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-list"></i> Watchlist</h3>
+                    </div>
+                    <div class="card-body">
+                        <div id="watchlist" class="loading">
+                            <i class="fas fa-hourglass-half"></i> Loading watchlist...
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-bar"></i> Quick Actions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; flex-direction: column; gap: 10px;padding: 25px;">
+                            <a href="/docs" class="btn" target="_blank">
+                                <i class="fas fa-book"></i> API Documentation
+                            </a>
+                            <button class="btn" onclick="loadLatestReport()">
+                                <i class="fas fa-file-alt"></i> Latest Report
+                            </button>
+                            <button class="btn" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> Refresh Data
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="report" class="tab-content">
+            <div class="section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2><i class="fas fa-file-alt"></i> Latest Daily Report</h2>
+                    <button class="btn" onclick="loadDetailedReport()">
+                        <i class="fas fa-sync-alt"></i> Refresh Report
+                    </button>
+                </div>
+
+                <div id="detailed-report" class="loading">
+                    <i class="fas fa-file-import"></i> Loading detailed report...
+                </div>
+            </div>
+        </div>
+
+        <div id="summary" class="tab-content">
+            <div class="section">
+                <h2><i class="fas fa-chart-pie"></i> Summary Reports</h2>
+                <p>Generate comprehensive summary reports for custom date periods (maximum 60 days)</p>
+
+                <!-- Report Generation Form -->
+                <div class="summary-form-section">
+                    <h3><i class="fas fa-calendar-plus"></i> Generate New Summary Report</h3>
+                    <div class="form-container">
+                        <div class="form-group-inline">
+                            <div class="input-group">
+                                <label for="summary-start-date">Start Date:</label>
+                                <input type="date" id="summary-start-date" class="input-field" max="">
+                            </div>
+                            <div class="input-group">
+                                <label for="summary-end-date">End Date:</label>
+                                <input type="date" id="summary-end-date" class="input-field" max="">
+                            </div>
+                            <div class="input-group">
+                                <button id="generate-summary-btn" class="btn btn-primary" onclick="generateSummaryReport()">
+                                    <i class="fas fa-magic"></i> Generate Report
+                                </button>
+                            </div>
+                        </div>
+                        <div class="date-range-info">
+                            <span id="date-range-days">Select a date range to see the analysis period</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Date Range Buttons -->
+                <div class="quick-ranges">
+                    <h4><i class="fas fa-clock"></i> Quick Date Ranges</h4>
+                    <div class="range-buttons">
+                        <button class="btn btn-secondary" onclick="setDateRange(7)">
+                            <i class="fas fa-calendar-day"></i> Last 7 Days
+                        </button>
+                        <button class="btn btn-secondary" onclick="setDateRange(14)">
+                            <i class="fas fa-calendar-week"></i> Last 2 Weeks
+                        </button>
+                        <button class="btn btn-secondary" onclick="setDateRange(30)">
+                            <i class="fas fa-calendar-alt"></i> Last 30 Days
+                        </button>
+                        <button class="btn btn-secondary" onclick="setDateRange(60)">
+                            <i class="fas fa-calendar"></i> Last 60 Days
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Generated Report Display -->
+                <div id="generated-summary-report"></div>
+
+                <!-- Recent Summary Reports -->
+                <div class="recent-reports-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3><i class="fas fa-history"></i> Performance Analytics</h3>
+                        <button class="btn btn-secondary" onclick="loadPerformanceMetrics()">
+                            <i class="fas fa-analytics"></i> Load Performance Data
+                        </button>
+                    </div>
+                    <div id="performance-analytics" class="loading">
+                        <i class="fas fa-chart-bar"></i> Click "Load Performance Data" to view analytics...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="api" class="tab-content">
+            <div class="section">
+                <h2>API Explorer</h2>
+                <p>Interactive API endpoints for the Trading Bot system:</p>
+
+                <h3>System Endpoints</h3>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /health - System health check
+                    <button class="btn" onclick="testEndpoint('/health')">Test</button>
+                </div>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/v1/status - Detailed system status
+                    <button class="btn" onclick="testEndpoint('/api/v1/status')">Test</button>
+                </div>
+
+                <h3>Stock Endpoints</h3>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/v1/stocks/watchlist - Get watchlist
+                    <button class="btn" onclick="testEndpoint('/api/v1/stocks/watchlist')">Test</button>
+                </div>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/v1/stocks/AAPL/analysis - Stock analysis
+                    <button class="btn" onclick="testEndpoint('/api/v1/stocks/AAPL/analysis')">Test</button>
+                </div>
+
+                <h3>Report Endpoints</h3>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/v1/reports/current-recommendations - Current picks
+                    <button class="btn" onclick="testEndpoint('/api/v1/reports/current-recommendations')">Test</button>
+                </div>
+                <div class="api-endpoint">
+                    <span class="method">GET</span> /api/v1/reports/daily/latest - Latest daily report
+                    <button class="btn" onclick="testEndpoint('/api/v1/reports/daily/latest')">Test</button>
+                </div>
+
+                <div id="api-result" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+
+        <div id="docs" class="tab-content">
+            <div class="section">
+                <h2>Documentation</h2>
+                <p>Comprehensive documentation for the Trading Bot API:</p>
+
+                <div style="margin: 20px 0;">
+                    <a href="/docs" class="btn" target="_blank">
+                        <i class="fas fa-external-link-alt"></i> Open Interactive API Documentation
+                    </a>
+                </div>
+
+                <h3>Features</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li>Dynamic stock list collection from multiple sources</li>
+                    <li>AI-powered investment recommendations</li>
+                    <li>Daily automated analysis reports</li>
+                    <li>Real-time market data integration</li>
+                    <li>Risk categorization (Stable vs Risky investments)</li>
+                    <li>Performance tracking and analytics</li>
+                    <li>RESTful API with comprehensive endpoints</li>
+                </ul>
+
+                <h3>Investment Strategy</h3>
+                <ul style="margin-left: 20px; line-height: 1.8;">
+                    <li><strong>Stable Portfolio:</strong> $200 monthly allocation for low-risk investments</li>
+                    <li><strong>Risky Portfolio:</strong> $50 monthly allocation for high-growth potential stocks</li>
+                    <li><strong>Diversification:</strong> Automated selection from curated watchlists</li>
+                    <li><strong>Analysis:</strong> Technical indicators, fundamentals, and sentiment analysis</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = window.location.origin;
+
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            // Load content for specific tabs
+            if (tabName === 'report') {
+                loadDetailedReport();
+            } else if (tabName === 'summary') {
+                initializeSummaryTab();
+            }
+        }
+
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                };
+
+                const response = await fetch(baseUrl + endpoint, config);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ detail: 'Network error' }));
+                    throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error for ${endpoint}:`, error);
+                throw error;
+            }
+        }
+
+        async function loadSystemInfo() {
+            try {
+                const health = await apiCall('/health');
+                const status = await apiCall('/api/v1/status');
+
+                document.getElementById('system-info').innerHTML = `
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <i class="fas fa-server"></i>
+                            <div>
+                                <strong>API Status</strong>
+                                <span>${health.services?.api || 'Operational'}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-database"></i>
+                            <div>
+                                <strong>Storage</strong>
+                                <span>${status.storage_status?.status || 'Unknown'}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-list"></i>
+                            <div>
+                                <strong>Tracked Stocks</strong>
+                                <span>${status.api_configuration?.total_tracked_stocks || 0}</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-clock"></i>
+                            <div>
+                                <strong>Last Updated</strong>
+                                <span>${new Date(health.timestamp).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('status-text').textContent = 'System Healthy';
+            } catch (error) {
+                document.getElementById('system-info').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load system information</span>
+                    </div>
+                `;
+                document.getElementById('status-text').textContent = 'System Error';
+            }
+        }
+
+        async function loadRecommendations() {
+            try {
+                const recs = await apiCall('/api/v1/reports/current-recommendations');
+
+                document.getElementById('recommendations').innerHTML = `
+                    <div class="recommendations-container">
+                        <div class="rec-card-compact stable">
+                            <div class="rec-header-compact">
+                                <div class="rec-label">
+                                    <i class="fas fa-shield-alt"></i>
+                                    <span>Stable Pick</span>
+                                </div>
+                                <div class="rec-symbol-large">${recs.stable_recommendation?.symbol || 'N/A'}</div>
+                            </div>
+                            <div class="rec-details">
+                                <div class="rec-amount">$${recs.stable_recommendation?.allocation || 0}</div>
+                                <div class="rec-confidence-compact">
+                                    <span>${Math.round((recs.stable_recommendation?.confidence || 0) * 100)}% confidence</span>
+                                    <div class="confidence-bar-small">
+                                        <div class="confidence-fill-small stable" style="width: ${(recs.stable_recommendation?.confidence || 0) * 100}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rec-card-compact risky">
+                            <div class="rec-header-compact">
+                                <div class="rec-label">
+                                    <i class="fas fa-rocket"></i>
+                                    <span>Risky Pick</span>
+                                </div>
+                                <div class="rec-symbol-large">${recs.risky_recommendation?.symbol || 'N/A'}</div>
+                            </div>
+                            <div class="rec-details">
+                                <div class="rec-amount">$${recs.risky_recommendation?.allocation || 0}</div>
+                                <div class="rec-confidence-compact">
+                                    <span>${Math.round((recs.risky_recommendation?.confidence || 0) * 100)}% confidence</span>
+                                    <div class="confidence-bar-small">
+                                        <div class="confidence-fill-small risky" style="width: ${(recs.risky_recommendation?.confidence || 0) * 100}%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rec-footer">
+                        <i class="fas fa-calendar"></i>
+                        Generated: ${new Date(recs.date).toLocaleDateString()}
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('recommendations').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load recommendations</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function loadWatchlist() {
+            try {
+                const watchlist = await apiCall('/api/v1/stocks/watchlist');
+
+                // Handle the actual API response format
+                const stableStocks = watchlist.stable_stocks?.symbols || [];
+                const riskyStocks = watchlist.risky_stocks?.symbols || [];
+
+                document.getElementById('watchlist').innerHTML = `
+                    <div class="watchlist-container">
+                        <div class="watchlist-section">
+                            <div class="watchlist-header">
+                                <i class="fas fa-shield-alt" style="color: #28a745;"></i>
+                                <span class="watchlist-title">Stable Stocks</span>
+                                <span class="watchlist-count">(${stableStocks.length})</span>
+                            </div>
+                            <div class="stock-symbols">
+                                ${stableStocks.slice(0, 5).map(symbol => `<span class="symbol-tag stable">${symbol}</span>`).join('')}
+                                ${stableStocks.length > 5 ? `<span class="more-count">+${stableStocks.length - 5} more</span>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="watchlist-section">
+                            <div class="watchlist-header">
+                                <i class="fas fa-rocket" style="color: #dc3545;"></i>
+                                <span class="watchlist-title">Risky Stocks</span>
+                                <span class="watchlist-count">(${riskyStocks.length})</span>
+                            </div>
+                            <div class="stock-symbols">
+                                ${riskyStocks.slice(0, 5).map(symbol => `<span class="symbol-tag risky">${symbol}</span>`).join('')}
+                                ${riskyStocks.length > 5 ? `<span class="more-count">+${riskyStocks.length - 5} more</span>` : ''}
+                            </div>
+                        </div>
+
+                        <div class="watchlist-footer">
+                            <i class="fas fa-clock"></i>
+                            <span>Last Updated: ${watchlist.last_updated ? new Date(watchlist.last_updated).toLocaleDateString() : 'Unknown'}</span>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('watchlist').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load watchlist: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        async function testEndpoint(endpoint) {
+            const result = await apiCall(endpoint);
+            document.getElementById('api-result').innerHTML = `
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                    <strong>Response from ${endpoint}:</strong>
+                    <pre style="margin-top: 10px; white-space: pre-wrap; font-size: 0.9rem;">${JSON.stringify(result, null, 2)}</pre>
+                </div>
+            `;
+        }
+
+        async function loadLatestReport() {
+            try {
+                const report = await apiCall('/api/v1/reports/daily/latest');
+                alert('Latest Report:\\n' + JSON.stringify(report, null, 2));
+            } catch (error) {
+                alert('Failed to load latest report: ' + error.message);
+            }
+        }
+
+        function refreshData() {
+            loadSystemInfo();
+            loadRecommendations();
+            loadWatchlist();
+        }
+
+        async function loadDetailedReport() {
+            document.getElementById('detailed-report').innerHTML = '<i class="fas fa-file-import"></i> Loading detailed report...';
+
+            try {
+                const reportData = await apiCall('/api/v1/reports/daily/latest');
+                const report = reportData.report;
+
+                document.getElementById('detailed-report').innerHTML = `
+                    <div class="report-container">
+                        <!-- Report Header -->
+                        <div class="report-header-section">
+                            <h3><i class="fas fa-file-alt"></i> Daily Investment Report</h3>
+                            <p>Report ID: ${report.report_id}</p>
+                            <div class="report-meta">
+                                <div class="meta-item">
+                                    <strong>${new Date(report.date).toLocaleDateString()}</strong>
+                                    <span>Date Generated</span>
+                                </div>
+                                <div class="meta-item">
+                                    <strong>${report.analyzed_stocks_count || 0}</strong>
+                                    <span>Stocks Analyzed</span>
+                                </div>
+                                <div class="meta-item">
+                                    <strong>${(report.processing_time_minutes || 0).toFixed(1)} min</strong>
+                                    <span>Processing Time</span>
+                                </div>
+                                <div class="meta-item">
+                                    <strong>${Math.round((report.data_quality_score || 0) * 100)}%</strong>
+                                    <span>Data Quality</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Investment Recommendations -->
+                        <div class="recommendations-grid">
+                            <!-- Stable Recommendation -->
+                            <div class="recommendation-card stable">
+                                <div class="recommendation-header">
+                                    <div class="recommendation-symbol">${report.stable_recommendation?.symbol || 'N/A'}</div>
+                                    <div class="recommendation-type stable">
+                                        <i class="fas fa-shield-alt"></i> Stable
+                                    </div>
+                                </div>
+
+                                <div class="recommendation-metrics">
+                                    <div class="metric-item">
+                                        <span class="metric-value">$${report.stable_recommendation?.allocation || 0}</span>
+                                        <span class="metric-label">Allocation</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${Math.round((report.stable_recommendation?.confidence || 0) * 100)}%</span>
+                                        <span class="metric-label">Confidence</span>
+                                        <div class="confidence-meter">
+                                            <div class="confidence-fill stable" style="width: ${(report.stable_recommendation?.confidence || 0) * 100}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${((report.stable_recommendation?.expected_return_30d || 0) * 100).toFixed(1)}%</span>
+                                        <span class="metric-label">Expected Return</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${((report.stable_recommendation?.max_risk || 0) * 100).toFixed(1)}%</span>
+                                        <span class="metric-label">Max Risk</span>
+                                    </div>
+                                </div>
+
+                                <div class="reasoning-section">
+                                    <h4><i class="fas fa-lightbulb"></i> Investment Reasoning</h4>
+                                    <p class="reasoning-text">${report.stable_recommendation?.reasoning || 'No reasoning provided'}</p>
+                                </div>
+                            </div>
+
+                            <!-- Risky Recommendation -->
+                            <div class="recommendation-card risky">
+                                <div class="recommendation-header">
+                                    <div class="recommendation-symbol">${report.risky_recommendation?.symbol || 'N/A'}</div>
+                                    <div class="recommendation-type risky">
+                                        <i class="fas fa-rocket"></i> Risky
+                                    </div>
+                                </div>
+
+                                <div class="recommendation-metrics">
+                                    <div class="metric-item">
+                                        <span class="metric-value">$${report.risky_recommendation?.allocation || 0}</span>
+                                        <span class="metric-label">Allocation</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${Math.round((report.risky_recommendation?.confidence || 0) * 100)}%</span>
+                                        <span class="metric-label">Confidence</span>
+                                        <div class="confidence-meter">
+                                            <div class="confidence-fill risky" style="width: ${(report.risky_recommendation?.confidence || 0) * 100}%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${((report.risky_recommendation?.expected_return_30d || 0) * 100).toFixed(1)}%</span>
+                                        <span class="metric-label">Expected Return</span>
+                                    </div>
+                                    <div class="metric-item">
+                                        <span class="metric-value">${((report.risky_recommendation?.max_risk || 0) * 100).toFixed(1)}%</span>
+                                        <span class="metric-label">Max Risk</span>
+                                    </div>
+                                </div>
+
+                                <div class="reasoning-section">
+                                    <h4><i class="fas fa-lightbulb"></i> Investment Reasoning</h4>
+                                    <p class="reasoning-text">${report.risky_recommendation?.reasoning || 'No reasoning provided'}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Market Overview -->
+                        <div class="market-overview-section">
+                            <h3><i class="fas fa-globe"></i> Market Overview</h3>
+
+                            <div style="margin: 20px 0;">
+                                <span class="market-sentiment-badge ${(report.market_overview?.market_sentiment || 'neutral').toLowerCase()}">
+                                    <i class="fas fa-chart-line"></i>
+                                    ${report.market_overview?.market_sentiment || 'UNKNOWN'} Market Sentiment
+                                </span>
+                            </div>
+
+                            ${report.market_overview?.market_themes ? `
+                                <div class="market-themes">
+                                    <h4><i class="fas fa-tags"></i> Key Market Themes</h4>
+                                    <div class="theme-tags">
+                                        ${report.market_overview.market_themes.map(theme => `
+                                            <span class="theme-tag">${theme}</span>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Market Risks -->
+                        ${report.market_risks && report.market_risks.length > 0 ? `
+                            <div class="risks-section">
+                                <h3><i class="fas fa-exclamation-triangle"></i> Market Risks to Monitor</h3>
+                                <ul class="risk-items">
+                                    ${report.market_risks.map(risk => `
+                                        <li class="risk-item">
+                                            <i class="fas fa-warning"></i>
+                                            <span>${risk}</span>
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+
+                        <!-- Analysis Statistics -->
+                        <div class="stats-summary">
+                            <h3><i class="fas fa-chart-bar"></i> Analysis Summary</h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <span class="stat-value">${report.analyzed_stocks_count || 0}</span>
+                                    <span class="stat-label">Stocks Analyzed</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value">${(report.processing_time_minutes || 0).toFixed(1)}m</span>
+                                    <span class="stat-label">Processing Time</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value">${Math.round((report.data_quality_score || 0) * 100)}%</span>
+                                    <span class="stat-label">Data Quality</span>
+                                </div>
+                                <div class="stat-card">
+                                    <span class="stat-value">$${(report.stable_recommendation?.allocation || 0) + (report.risky_recommendation?.allocation || 0)}</span>
+                                    <span class="stat-label">Total Investment</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Report Footer -->
+                        <div style="text-align: center; padding: 20px; background: rgba(0,0,0,0.02); border-radius: 10px; color: #666; font-style: italic;">
+                            <i class="fas fa-info-circle"></i>
+                            Retrieved at: ${new Date(reportData.retrieved_at).toLocaleString()}
+                            <br>
+                            ${report.content || 'Automated investment analysis report'}
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('detailed-report').innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load detailed report: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Summary Reports Tab Functions
+        function initializeSummaryTab() {
+            // Set default dates and max dates
+            const today = new Date();
+            const maxDate = today.toISOString().split('T')[0];
+            const defaultEndDate = today.toISOString().split('T')[0];
+            const defaultStartDate = new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
+
+            document.getElementById('summary-start-date').max = maxDate;
+            document.getElementById('summary-end-date').max = maxDate;
+            document.getElementById('summary-start-date').value = defaultStartDate;
+            document.getElementById('summary-end-date').value = defaultEndDate;
+
+            updateDateRangeInfo();
+
+            // Add event listeners for date changes
+            document.getElementById('summary-start-date').addEventListener('change', updateDateRangeInfo);
+            document.getElementById('summary-end-date').addEventListener('change', updateDateRangeInfo);
+        }
+
+        function updateDateRangeInfo() {
+            const startDate = document.getElementById('summary-start-date').value;
+            const endDate = document.getElementById('summary-end-date').value;
+            const infoElement = document.getElementById('date-range-days');
+
+            if (startDate && endDate) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+
+                if (diffDays > 60) {
+                    infoElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${diffDays} days selected (Maximum: 60 days)`;
+                    infoElement.style.color = '#dc3545';
+                    document.getElementById('generate-summary-btn').disabled = true;
+                } else if (diffDays < 1) {
+                    infoElement.innerHTML = `<i class="fas fa-exclamation-triangle"></i> End date must be after start date`;
+                    infoElement.style.color = '#dc3545';
+                    document.getElementById('generate-summary-btn').disabled = true;
+                } else {
+                    infoElement.innerHTML = `<i class="fas fa-calendar-check"></i> ${diffDays} days selected for analysis`;
+                    infoElement.style.color = '#3498db';
+                    document.getElementById('generate-summary-btn').disabled = false;
+                }
+            } else {
+                infoElement.innerHTML = 'Select a date range to see the analysis period';
+                infoElement.style.color = '#3498db';
+                document.getElementById('generate-summary-btn').disabled = false;
+            }
+        }
+
+        function setDateRange(days) {
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(endDate.getDate() - days + 1);
+
+            document.getElementById('summary-end-date').value = endDate.toISOString().split('T')[0];
+            document.getElementById('summary-start-date').value = startDate.toISOString().split('T')[0];
+
+            updateDateRangeInfo();
+        }
+
+        async function generateSummaryReport() {
+            const startDate = document.getElementById('summary-start-date').value;
+            const endDate = document.getElementById('summary-end-date').value;
+            const generateBtn = document.getElementById('generate-summary-btn');
+            const reportDiv = document.getElementById('generated-summary-report');
+
+            if (!startDate || !endDate) {
+                reportDiv.innerHTML = `
+                    <div class="generation-status error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Please select both start and end dates
+                    </div>
+                `;
+                return;
+            }
+
+            // Disable button and show loading
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-hourglass-half"></i> Generating...';
+
+            reportDiv.innerHTML = `
+                <div class="generation-status">
+                    <i class="fas fa-magic"></i>
+                    Generating summary report for ${startDate} to ${endDate}...
+                </div>
+            `;
+
+            try {
+                const result = await apiCall('/api/v1/reports/summary', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        start_date: startDate,
+                        end_date: endDate
+                    })
+                });
+
+                displaySummaryReport(result);
+
+            } catch (error) {
+                reportDiv.innerHTML = `
+                    <div class="generation-status error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Failed to generate summary report: ${error.message}
+                    </div>
+                `;
+            } finally {
+                // Re-enable button
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '<i class="fas fa-magic"></i> Generate Report';
+            }
+        }
+
+        function displaySummaryReport(result) {
+            const report = result.report;
+            const reportDiv = document.getElementById('generated-summary-report');
+
+            reportDiv.innerHTML = `
+                <div class="summary-report-container">
+                    <div class="summary-header">
+                        <h3><i class="fas fa-chart-pie"></i> ${report.report_type} Summary Report</h3>
+                        <div class="summary-period">
+                            ${new Date(report.start_date).toLocaleDateString()} - ${new Date(report.end_date).toLocaleDateString()}
+                            (${report.days_analyzed} days analyzed)
+                        </div>
+                        <div style="margin-top: 10px; font-size: 0.9rem;">
+                            Report ID: ${report.report_id}
+                        </div>
+                    </div>
+
+                    <!-- Performance Overview -->
+                    <div class="performance-overview">
+                        <div class="performance-card">
+                            <span class="performance-value">${report.performance_metrics?.total_recommendations || 0}</span>
+                            <span class="performance-label">Total Recommendations</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${report.performance_metrics?.stable_picks_count || 0}</span>
+                            <span class="performance-label">Stable Picks</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${report.performance_metrics?.risky_picks_count || 0}</span>
+                            <span class="performance-label">Risky Picks</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${Math.round((report.performance_metrics?.avg_confidence_score || 0) * 100)}%</span>
+                            <span class="performance-label">Avg Confidence</span>
+                        </div>
+                    </div>
+
+                    <!-- Top Performers -->
+                    <div class="top-performers-section">
+                        <div class="performer-card">
+                            <h4><i class="fas fa-shield-alt"></i> Top Stable Performers</h4>
+                            <div class="performer-list">
+                                ${(report.top_stable_performers || []).map(performer => `
+                                    <div class="performer-item">
+                                        <span class="performer-symbol">${performer.symbol}</span>
+                                        <span class="performer-count">${performer.frequency}x recommended</span>
+                                    </div>
+                                `).join('') || '<div class="performer-item"><span>No stable recommendations in this period</span></div>'}
+                            </div>
+                        </div>
+
+                        <div class="performer-card">
+                            <h4><i class="fas fa-rocket"></i> Top Risky Performers</h4>
+                            <div class="performer-list">
+                                ${(report.top_risky_performers || []).map(performer => `
+                                    <div class="performer-item">
+                                        <span class="performer-symbol">${performer.symbol}</span>
+                                        <span class="performer-count">${performer.frequency}x recommended</span>
+                                    </div>
+                                `).join('') || '<div class="performer-item"><span>No risky recommendations in this period</span></div>'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Insights -->
+                    ${report.insights && report.insights.length > 0 ? `
+                        <div class="market-insights">
+                            <h4><i class="fas fa-lightbulb"></i> Key Insights</h4>
+                            <ul class="insight-list">
+                                ${report.insights.map(insight => `
+                                    <li class="insight-item">${insight}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+
+                    <!-- Market Trends -->
+                    ${report.market_trends?.dominant_themes && report.market_trends.dominant_themes.length > 0 ? `
+                        <div class="market-insights">
+                            <h4><i class="fas fa-trending-up"></i> Dominant Market Themes</h4>
+                            <div class="theme-tags">
+                                ${report.market_trends.dominant_themes.map(theme => `
+                                    <span class="theme-tag">${theme}</span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Next Month Outlook -->
+                    ${report.next_month_outlook ? `
+                        <div class="outlook-section">
+                            <h4><i class="fas fa-crystal-ball"></i> Next Month Outlook</h4>
+                            <p class="outlook-text">${report.next_month_outlook}</p>
+                        </div>
+                    ` : ''}
+
+                    <!-- Generation Info -->
+                    <div class="generation-status">
+                        <i class="fas fa-check-circle"></i>
+                        Report generated successfully at ${new Date(result.generated_at).toLocaleString()}
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadPerformanceMetrics() {
+            const analyticsDiv = document.getElementById('performance-analytics');
+            analyticsDiv.innerHTML = '<i class="fas fa-chart-line"></i> Loading performance analytics...';
+
+            try {
+                const performance = await apiCall('/api/v1/reports/performance');
+
+                analyticsDiv.innerHTML = `
+                    <div class="performance-overview">
+                        <div class="performance-card">
+                            <span class="performance-value">${performance.total_reports || 0}</span>
+                            <span class="performance-label">Reports (30d)</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${Math.round((performance.average_confidence || 0) * 100)}%</span>
+                            <span class="performance-label">Avg Confidence</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${Math.round(performance.system_reliability || 0)}%</span>
+                            <span class="performance-label">System Reliability</span>
+                        </div>
+                        <div class="performance-card">
+                            <span class="performance-value">${(performance.most_recommended?.stable?.[0]?.[1] || 0) + (performance.most_recommended?.risky?.[0]?.[1] || 0)}</span>
+                            <span class="performance-label">Total Picks</span>
+                        </div>
+                    </div>
+
+                    <div class="top-performers-section">
+                        <div class="performer-card">
+                            <h4><i class="fas fa-trophy"></i> Most Recommended Stable Stocks</h4>
+                            <div class="performer-list">
+                                ${(performance.most_recommended?.stable || []).slice(0, 5).map(([symbol, count]) => `
+                                    <div class="performer-item">
+                                        <span class="performer-symbol">${symbol}</span>
+                                        <span class="performer-count">${count} times</span>
+                                    </div>
+                                `).join('') || '<div class="performer-item"><span>No data available</span></div>'}
+                            </div>
+                        </div>
+
+                        <div class="performer-card">
+                            <h4><i class="fas fa-fire"></i> Most Recommended Risky Stocks</h4>
+                            <div class="performer-list">
+                                ${(performance.most_recommended?.risky || []).slice(0, 5).map(([symbol, count]) => `
+                                    <div class="performer-item">
+                                        <span class="performer-symbol">${symbol}</span>
+                                        <span class="performer-count">${count} times</span>
+                                    </div>
+                                `).join('') || '<div class="performer-item"><span>No data available</span></div>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                analyticsDiv.innerHTML = `
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Failed to load performance data: ${error.message}</span>
+                    </div>
+                `;
+            }
+        }
+
+        // Load initial data
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSystemInfo();
+            loadRecommendations();
+            loadWatchlist();
+        });
+    </script>
+</body>
+</html>
