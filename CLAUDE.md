@@ -108,14 +108,48 @@ celery -A app.tasks.daily_tasks beat --loglevel=info
 ```bash
 # Trigger daily analysis manually
 python -m app.tasks.daily_tasks daily
+python run.py analysis                    # Alternative using run script
+python run.py analysis --docker          # Using Docker container
 
 # Generate 30-day summary report
 python -m app.tasks.daily_tasks summary
+python run.py summary                     # Alternative using run script
+python run.py summary --days 7           # Custom number of days
 
 # Test individual components
 python -c "from app.services.stock_list_collector import StockListCollector; import asyncio; slc = StockListCollector(); print(asyncio.run(slc.update_stock_lists()))"
 
 python -c "from app.services.data_collector import DataCollector; import asyncio; dc = DataCollector(); print(asyncio.run(dc.collect_daily_data()))"
+```
+
+### Development & Testing Commands
+```bash
+# System management using run.py script
+python run.py docker                      # Start all services with Docker
+python run.py stop                        # Stop Docker services
+python run.py health                      # Check system health
+python run.py status                      # Show detailed system status
+python run.py containers                  # Show container status
+python run.py tasks                       # Check task execution status
+python run.py logs                        # View all service logs
+
+# Individual service management
+python run.py api                         # Run FastAPI server locally
+python run.py worker                      # Run Celery worker locally
+python run.py beat                        # Run Celery beat scheduler locally
+python run.py flower                      # Run Flower monitoring interface
+
+# Docker container testing
+python run.py worker --docker             # Run worker in Docker container
+python run.py beat --docker               # Run beat scheduler in Docker
+python run.py flower --docker             # Run Flower in Docker
+
+# Direct dependency installation
+pip install -r requirements.txt
+
+# Test core services individually
+python -c "from app.config import settings; print(f'Config loaded: {settings.max_stable_stocks} stable stocks')"
+python -c "from app.services.json_storage import JSONStorage; js = JSONStorage(); print(js.get_health_status())"
 ```
 
 ### API Testing
@@ -231,12 +265,33 @@ The system automatically updates stock lists daily by collecting from multiple i
 OPENAI_API_KEY=your_openai_api_key
 ALPHA_VANTAGE_KEY=your_alpha_vantage_key
 
-# Optional
+# Optional API Keys  
 NEWS_API_KEY=your_news_api_key
+TWELVE_DATA_API_KEY=your_twelve_data_key
+IEX_TOKEN=your_iex_token
+FMP_API_KEY=your_financial_modeling_prep_key
 
 # Service Configuration
-REDIS_HOST=trade_bot-redis
+REDIS_HOST=trade_bot-redis  # Use localhost for local development
 REDIS_PORT=6379
+REDIS_DB=0
+
+# Application Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=false
+```
+
+### Environment Setup
+```bash
+# Copy example environment file
+cp .env.example .env
+
+# Edit with your API keys
+nano .env  # or your preferred editor
+
+# Verify configuration
+python -c "from app.config import settings; print('Config loaded successfully')"
 ```
 
 ## Configuration Settings
@@ -250,3 +305,27 @@ Key settings in `app/config.py`:
 - `stock_validation_volume_threshold: 100000` - Minimum daily volume for stock validation
 
 This system represents a modern, lightweight approach to automated investment analysis with dynamic data collection and efficient JSON-based storage.
+
+## Development Workflow
+
+### Daily Development Tasks
+1. **System Status Check**: `python run.py health` - Check all services
+2. **View Current Data**: `python run.py status` - See analysis status and configuration  
+3. **Manual Analysis**: `python run.py analysis` - Trigger analysis for testing
+4. **Check Results**: `python run.py tasks` - Verify task completion and file creation
+5. **Monitor Services**: `python run.py logs` - Watch service logs in real-time
+
+### Code Architecture Understanding
+- **Entry Point**: `app/main.py` - FastAPI application with health checks and API routes
+- **Configuration**: `app/config.py` - Centralized settings using Pydantic BaseSettings
+- **Models**: `app/models/` - Pydantic data models for stock data and reports  
+- **Services**: `app/services/` - Core business logic (data collection, analysis, storage)
+- **API Routes**: `app/api/` - REST endpoints for stocks and reports
+- **Background Tasks**: `app/tasks/` - Celery tasks for scheduled analysis
+- **Utility Script**: `run.py` - Management script for all development operations
+
+### Key Service Dependencies
+- **Stock List Collector** → **Data Collector** → **LLM Analyzer** → **Report Generator** → **JSON Storage**
+- Each service is designed to be testable independently
+- JSON storage provides simple file-based persistence without external database dependencies
+- Celery + Redis handle background processing and scheduling
