@@ -1,6 +1,6 @@
-from datetime import datetime
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel, Field
+from datetime import datetime, date
+from typing import List, Optional, Dict, Any, Union
+from pydantic import BaseModel, Field, field_validator
 from .stock_data import MarketOverview, StockRecommendation
 
 
@@ -71,9 +71,19 @@ class SummaryReport(BaseModel):
 
 
 class ReportRequest(BaseModel):
-    start_date: datetime
-    end_date: datetime
+    start_date: Union[str, date]
+    end_date: Union[str, date]
     format: str = "JSON"
+    
+    @field_validator('start_date', 'end_date')
+    @classmethod
+    def parse_date(cls, value):
+        if isinstance(value, str):
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                raise ValueError("Date must be in YYYY-MM-DD format")
+        return value
 
 
 class CurrentRecommendations(BaseModel):

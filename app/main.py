@@ -1,5 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from datetime import datetime, timedelta
 import logging
 
@@ -176,22 +177,28 @@ async def get_system_status():
 
 # Error handlers
 @app.exception_handler(404)
-async def not_found_handler(request, exc):
-    return {
-        "error": "Not Found",
-        "message": "The requested resource was not found",
-        "timestamp": datetime.now().isoformat()
-    }
+async def not_found_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=404,
+        content={
+            "error": "Not Found",
+            "message": "The requested resource was not found",
+            "timestamp": datetime.now().isoformat()
+        }
+    )
 
 
 @app.exception_handler(500)
-async def internal_error_handler(request, exc):
+async def internal_error_handler(request: Request, exc):
     logger.error(f"Internal server error: {str(exc)}")
-    return {
-        "error": "Internal Server Error",
-        "message": "An unexpected error occurred",
-        "timestamp": datetime.now().isoformat()
-    }
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error": "Internal Server Error",
+            "message": "An unexpected error occurred",
+            "timestamp": datetime.now().isoformat()
+        }
+    )
 
 
 # Startup event

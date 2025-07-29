@@ -1,0 +1,433 @@
+{
+  "info": {
+    "name": "Trading Bot API",
+    "description": "Automated stock analysis and investment recommendation system with dynamic stock collection and AI-powered insights.",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "date",
+      "value": "2025-07-29",
+      "type": "string",
+      "description": "Default date for testing (YYYY-MM-DD format)"
+    },
+    {
+      "key": "symbol",
+      "value": "AAPL",
+      "type": "string", 
+      "description": "Default stock symbol for testing"
+    }
+  ],
+  "item": [
+    {
+      "name": "System Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Basic health check endpoint that returns system status, service health, and configuration summary."
+          },
+          "response": []
+        },
+        {
+          "name": "System Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "status"]
+            },
+            "description": "Detailed system status including storage statistics, analysis status, and configuration details."
+          },
+          "response": []
+        },
+        {
+          "name": "System Configuration",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/config",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "config"]
+            },
+            "description": "Returns system configuration including dynamic watchlist, investment allocations, and analysis settings."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for monitoring system health, status, and configuration."
+    },
+    {
+      "name": "Stock Analysis",
+      "item": [
+        {
+          "name": "Get Watchlist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/watchlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "watchlist"]
+            },
+            "description": "Returns the complete dynamically collected watchlist with stable and risky stocks, including last update timestamp."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/{{symbol}}/analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "{{symbol}}", "analysis"],
+              "variable": [
+                {
+                  "key": "symbol",
+                  "value": "AAPL",
+                  "description": "Stock symbol (e.g., AAPL, TSLA, IBM)"
+                }
+              ]
+            },
+            "description": "Get detailed analysis data for a specific stock including price data, technical indicators, fundamentals, and AI analysis."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Recommendation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/{{symbol}}/recommendation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "{{symbol}}", "recommendation"],
+              "variable": [
+                {
+                  "key": "symbol",
+                  "value": "AAPL",
+                  "description": "Stock symbol (e.g., AAPL, TSLA, IBM)"
+                }
+              ]
+            },
+            "description": "Get current AI recommendation for a specific stock including buy/hold/sell recommendation, confidence level, and reasoning."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/{{symbol}}/history?days=30",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "{{symbol}}", "history"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30",
+                  "description": "Number of days to retrieve (1-365)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "symbol",
+                  "value": "AAPL",
+                  "description": "Stock symbol (e.g., AAPL, TSLA, IBM)"
+                }
+              ]
+            },
+            "description": "Get historical analysis data for a stock over a specified period."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stocks by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/categories/{{category}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "categories", "{{category}}"],
+              "variable": [
+                {
+                  "key": "category",
+                  "value": "stable",
+                  "description": "Category: 'stable' or 'risky'"
+                }
+              ]
+            },
+            "description": "Get all stocks in a specific category (stable or risky) with their latest analysis data."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Trending Stocks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/trending?limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "trending"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of stocks to return (1-50)"
+                }
+              ]
+            },
+            "description": "Get trending stocks based on recent price movements, sorted by change percentage."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for stock analysis, recommendations, and market data."
+    },
+    {
+      "name": "Reports & Recommendations",
+      "item": [
+        {
+          "name": "Current Recommendations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/current-recommendations",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "current-recommendations"]
+            },
+            "description": "Get today's investment recommendations including stable ($200) and risky ($50) picks with reasoning and confidence levels."
+          },
+          "response": []
+        },
+        {
+          "name": "Latest Daily Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/daily/latest",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "daily", "latest"]
+            },
+            "description": "Get the most recent daily report with market overview, recommendations, risks, and analysis statistics."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily Report by Date",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/daily/{{date}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "daily", "{{date}}"],
+              "variable": [
+                {
+                  "key": "date",
+                  "value": "2025-07-29",
+                  "description": "Date in YYYY-MM-DD format"
+                }
+              ]
+            },
+            "description": "Get daily report for a specific date."
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Summary Report",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"start_date\": \"2025-07-01\",\n  \"end_date\": \"2025-07-30\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/summary",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "summary"]
+            },
+            "description": "Generate a 30-day summary report for the specified date range (max 60 days)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Summary Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/summary/{{reportId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "summary", "{{reportId}}"],
+              "variable": [
+                {
+                  "key": "reportId",
+                  "value": "SR_2025-07-30_30D",
+                  "description": "Summary report ID"
+                }
+              ]
+            },
+            "description": "Get a specific summary report by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Reports History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/history?days=30&report_type=DAILY",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "history"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30",
+                  "description": "Number of days to look back"
+                },
+                {
+                  "key": "report_type",
+                  "value": "DAILY",
+                  "description": "Report type: 'DAILY' or 'SUMMARY'"
+                }
+              ]
+            },
+            "description": "Get history of reports for a specified period and type."
+          },
+          "response": []
+        },
+        {
+          "name": "Performance Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reports/performance",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "reports", "performance"]
+            },
+            "description": "Get performance summary of recommendations over the last 30 days including most recommended stocks and system reliability."
+          },
+          "response": []
+        }
+      ],
+      "description": "Endpoints for daily reports, investment recommendations, and performance analysis."
+    },
+    {
+      "name": "Example Requests",
+      "item": [
+        {
+          "name": "Test with AAPL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/AAPL/analysis",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "AAPL", "analysis"]
+            },
+            "description": "Example: Get analysis for Apple Inc. stock."
+          },
+          "response": []
+        },
+        {
+          "name": "Test with TSLA",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/TSLA/recommendation",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "TSLA", "recommendation"]
+            },
+            "description": "Example: Get recommendation for Tesla Inc. stock."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stable Stocks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/categories/stable",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "categories", "stable"]
+            },
+            "description": "Example: Get all stable category stocks."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Risky Stocks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stocks/categories/risky",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stocks", "categories", "risky"]
+            },
+            "description": "Example: Get all risky category stocks."
+          },
+          "response": []
+        }
+      ],
+      "description": "Example requests with common stock symbols and categories."
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

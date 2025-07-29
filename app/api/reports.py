@@ -13,6 +13,38 @@ storage = JSONStorage()
 report_generator = ReportGenerator()
 
 
+@router.get("/daily/latest")
+async def get_latest_daily_report():
+    """Get the most recent daily report"""
+    try:
+        # Try today first, then yesterday
+        today = datetime.now().strftime("%Y-%m-%d")
+        report = await storage.get_daily_report(today)
+        
+        if not report:
+            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+            report = await storage.get_daily_report(yesterday)
+            
+            if not report:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No recent daily reports available"
+                )
+        
+        return {
+            "report": report,
+            "retrieved_at": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving latest report: {str(e)}"
+        )
+
+
 @router.get("/daily/{date}")
 async def get_daily_report(date: str):
     """Get daily report for a specific date (YYYY-MM-DD format)"""
@@ -45,38 +77,6 @@ async def get_daily_report(date: str):
         raise HTTPException(
             status_code=500,
             detail=f"Error retrieving daily report: {str(e)}"
-        )
-
-
-@router.get("/daily/latest")
-async def get_latest_daily_report():
-    """Get the most recent daily report"""
-    try:
-        # Try today first, then yesterday
-        today = datetime.now().strftime("%Y-%m-%d")
-        report = await storage.get_daily_report(today)
-        
-        if not report:
-            yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-            report = await storage.get_daily_report(yesterday)
-            
-            if not report:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No recent daily reports available"
-                )
-        
-        return {
-            "report": report,
-            "retrieved_at": datetime.now().isoformat()
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error retrieving latest report: {str(e)}"
         )
 
 
