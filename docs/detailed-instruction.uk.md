@@ -556,7 +556,7 @@ services:
       - "8000:8000"
     environment:
       - OPENSEARCH_HOST=opensearch
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - opensearch
@@ -569,7 +569,7 @@ services:
     command: celery -A app.tasks.daily_tasks worker --loglevel=info
     environment:
       - OPENSEARCH_HOST=opensearch
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - redis
@@ -580,7 +580,7 @@ services:
     command: celery -A app.tasks.daily_tasks beat --loglevel=info
     environment:
       - OPENSEARCH_HOST=opensearch
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - OPENAI_API_KEY=${OPENAI_API_KEY}
     depends_on:
       - redis
@@ -652,14 +652,17 @@ curl http://localhost:8000/recommendations/current
 ### 9.2 Моніторинг:
 
 ```bash
-# Перевірка стану OpenSearch
-curl http://localhost:9200/_cluster/health
+# Перевірка стану Redis
+curl http://localhost:6380 || echo "Redis is accessible on port 6380"
 
-# Перевірка індексів
-curl http://localhost:9200/_cat/indices
+# Перевірка контейнерів Docker
+docker compose ps
 
 # API статус
 curl http://localhost:8000/health
+
+# Flower monitoring
+curl http://localhost:5555
 ```
 
 ## 10. Розширення та оптимізація

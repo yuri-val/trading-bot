@@ -1,11 +1,12 @@
 services:
   # Main application
   app:
+    container_name: trade_bot-app
     build: .
     ports:
       - "8000:8000"
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY}
@@ -27,10 +28,11 @@ services:
 
   # Celery worker for background tasks
   celery-worker:
+    container_name: trade_bot-worker
     build: .
     command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY}
@@ -47,10 +49,11 @@ services:
 
   # Celery beat scheduler
   celery-beat:
+    container_name: trade_bot-beat
     build: .
     command: celery -A app.tasks.daily_tasks beat --loglevel=info
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ALPHA_VANTAGE_KEY=${ALPHA_VANTAGE_KEY}
@@ -68,6 +71,7 @@ services:
 
   # Redis for caching and Celery broker
   redis:
+    container_name: trade_bot-redis
     image: redis:7-alpine
     ports:
       - "6380:6379"
@@ -83,12 +87,13 @@ services:
       retries: 3
 
   flower:
+    container_name: trade_bot-flower
     build: .
-    command: sh -c "cd /app && celery -A flower_app.flower_celery flower --port=5555"
+    command: celery -A app.tasks.daily_tasks flower --port=5555 --address=0.0.0.0
     ports:
       - "5555:5555"
     environment:
-      - REDIS_HOST=redis
+      - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
     depends_on:
       - redis

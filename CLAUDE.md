@@ -235,7 +235,7 @@ ALPHA_VANTAGE_KEY=your_alpha_vantage_key
 NEWS_API_KEY=your_news_api_key
 
 # Service Configuration
-REDIS_HOST=redis
+REDIS_HOST=trade_bot-redis
 REDIS_PORT=6379
 ```
 
@@ -243,7 +243,7 @@ REDIS_PORT=6379
 
 Key settings in `app/config.py`:
 - `max_stable_stocks: 25` - Maximum stable stocks to collect
-- `max_risky_stocks: 15` - Maximum risky stocks to collect  
+- `max_risky_stocks: 15` - Maximum risky stocks to collect
 - `stable_investment: 200` - Dollar allocation for stable recommendations
 - `risky_investment: 50` - Dollar allocation for risky recommendations
 - `confidence_threshold: 0.6` - Minimum confidence for BUY recommendations
