@@ -11,6 +11,7 @@ pydantic-settings==2.1.0
 schedule==1.2.0
 yfinance==0.2.22
 alpha-vantage==2.3.1
+# Using requests directly for Financial Modeling Prep API
 beautifulsoup4==4.12.2
 lxml==4.9.3
 python-dotenv==1.0.0

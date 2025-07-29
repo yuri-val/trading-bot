@@ -8,6 +8,9 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     alpha_vantage_key: str = ""
     news_api_key: str = ""
+    twelve_data_api_key: str = ""
+    iex_token: str = ""
+    fmp_api_key: str = ""
     
     # Redis Configuration
     redis_host: str = "localhost"

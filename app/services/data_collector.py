@@ -1,10 +1,12 @@
 import yfinance as yf
 import requests
 import pandas as pd
+import asyncio
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from alpha_vantage.timeseries import TimeSeries
 from alpha_vantage.techindicators import TechIndicators
+import requests
 import logging
 
 from ..config import settings
@@ -22,11 +24,17 @@ class DataCollector:
     def __init__(self):
         self.av_key = settings.alpha_vantage_key
         self.news_api_key = settings.news_api_key
+        self.twelve_data_key = settings.twelve_data_api_key
+        self.iex_token = settings.iex_token
+        self.fmp_api_key = settings.fmp_api_key
         self.stock_collector = StockListCollector()
         self.storage = JSONStorage()
         if self.av_key:
             self.ts = TimeSeries(key=self.av_key, output_format='pandas')
             self.ti = TechIndicators(key=self.av_key, output_format='pandas')
+        
+        # Financial Modeling Prep base URL
+        self.fmp_base_url = "https://financialmodelingprep.com/api/v3"
     
     async def collect_daily_data(self) -> Dict[str, StockData]:
         """Collect data for all stocks in the watchlist"""
@@ -37,7 +45,7 @@ class DataCollector:
         logger.info(f"Collecting data for {len(all_symbols)} stocks")
         
         data = {}
-        for symbol in all_symbols:
+        for i, symbol in enumerate(all_symbols):
             try:
                 logger.info(f"Collecting data for {symbol}")
                 stock_data = await self._collect_single_stock(symbol, stock_lists)
@@ -47,6 +55,13 @@ class DataCollector:
                     data[symbol] = stock_data
                 else:
                     logger.warning(f"No data collected for {symbol}")
+                
+                # Rate limiting: Financial Modeling Prep allows 250 calls/day for free
+                # Add 2 second delay to be conservative
+                if i < len(all_symbols) - 1:  # Don't delay after last stock
+                    logger.info(f"Rate limiting: waiting 2 seconds before next stock...")
+                    await asyncio.sleep(2)
+                    
             except Exception as e:
                 logger.error(f"Error collecting data for {symbol}: {str(e)}")
                 continue
@@ -77,26 +92,17 @@ class DataCollector:
     async def _collect_single_stock(self, symbol: str, stock_lists: Optional[Dict] = None) -> Optional[StockData]:
         """Collect all data for a single stock"""
         try:
-            # Get basic price data from Yahoo Finance
-            ticker = yf.Ticker(symbol)
-            
-            # Get recent price data
-            hist = ticker.history(period="5d")
-            if hist.empty:
-                logger.warning(f"No historical data for {symbol}")
+            # Get basic price data from Financial Modeling Prep
+            price_data = await self._get_fmp_price_data(symbol)
+            if not price_data:
+                logger.warning(f"No price data for {symbol}")
                 return None
-            
-            # Get stock info
-            info = ticker.info
-            
-            # Create price data
-            price_data = self._create_price_data(hist, info)
             
             # Get technical indicators
             technical_indicators = await self._get_technical_indicators(symbol)
             
-            # Get fundamental data
-            fundamental_data = self._create_fundamental_data(info)
+            # Get fundamental data from Financial Modeling Prep
+            fundamental_data = await self._get_fmp_fundamental_data(symbol)
             
             # Get sentiment data
             sentiment_data = await self._get_sentiment_data(symbol)
@@ -118,23 +124,104 @@ class DataCollector:
             logger.error(f"Error collecting data for {symbol}: {str(e)}")
             return None
     
-    def _create_price_data(self, hist: pd.DataFrame, info: Dict) -> PriceData:
-        """Create price data from historical data"""
-        latest = hist.iloc[-1]
-        previous = hist.iloc[-2] if len(hist) > 1 else None
+    async def _get_fmp_price_data(self, symbol: str) -> Optional[PriceData]:
+        """Get price data from Financial Modeling Prep API"""
+        if not self.fmp_api_key:
+            logger.warning("Financial Modeling Prep API key not provided")
+            return None
         
-        previous_close = previous['Close'] if previous is not None else latest['Close']
-        change_percent = ((latest['Close'] - previous_close) / previous_close * 100) if previous_close > 0 else 0
+        try:
+            # Get real-time quote data
+            url = f"{self.fmp_base_url}/quote/{symbol}"
+            params = {"apikey": self.fmp_api_key}
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if not data or len(data) == 0:
+                logger.warning(f"No quote data found for {symbol}")
+                return None
+            
+            quote = data[0]  # FMP returns array with single quote
+            
+            # Extract price data
+            current_close = float(quote.get('price', 0))
+            previous_close = float(quote.get('previousClose', current_close))
+            
+            # Calculate change percent
+            change = float(quote.get('change', 0))
+            change_percent = float(quote.get('changesPercentage', 0))
+            
+            return PriceData(
+                open=float(quote.get('open', current_close)),
+                high=float(quote.get('dayHigh', current_close)),
+                low=float(quote.get('dayLow', current_close)),
+                close=current_close,
+                volume=int(quote.get('volume', 0)),
+                previous_close=previous_close,
+                change_percent=change_percent
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get Financial Modeling Prep price data for {symbol}: {str(e)}")
+            return None
+    
+    async def _get_fmp_fundamental_data(self, symbol: str) -> Optional[FundamentalData]:
+        """Get fundamental data from Financial Modeling Prep API"""
+        if not self.fmp_api_key:
+            return None
         
-        return PriceData(
-            open=float(latest['Open']),
-            high=float(latest['High']),
-            low=float(latest['Low']),
-            close=float(latest['Close']),
-            volume=int(latest['Volume']),
-            previous_close=float(previous_close),
-            change_percent=float(change_percent)
-        )
+        try:
+            # Get key metrics from Financial Modeling Prep
+            url = f"{self.fmp_base_url}/key-metrics/{symbol}"
+            params = {"apikey": self.fmp_api_key, "limit": 1}
+            
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if not data or len(data) == 0:
+                # Return basic structure if no data available
+                return FundamentalData(
+                    market_cap=None,
+                    pe_ratio=None,
+                    dividend_yield=None,
+                    eps=None,
+                    revenue_growth=None,
+                    debt_to_equity=None,
+                    price_to_book=None,
+                    roe=None
+                )
+            
+            metrics = data[0]  # Most recent year data
+            
+            return FundamentalData(
+                market_cap=metrics.get('marketCap'),
+                pe_ratio=metrics.get('peRatio'),
+                dividend_yield=metrics.get('dividendYield'),
+                eps=metrics.get('netIncomePerShare'),
+                revenue_growth=metrics.get('revenuePerShare'),
+                debt_to_equity=metrics.get('debtToEquity'),
+                price_to_book=metrics.get('priceToBookRatio'),
+                roe=metrics.get('returnOnEquity')
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to get Financial Modeling Prep fundamental data for {symbol}: {str(e)}")
+            # Return basic structure on error
+            return FundamentalData(
+                market_cap=None,
+                pe_ratio=None,
+                dividend_yield=None,
+                eps=None,
+                revenue_growth=None,
+                debt_to_equity=None,
+                price_to_book=None,
+                roe=None
+            )
     
     async def _get_technical_indicators(self, symbol: str) -> Optional[TechnicalIndicators]:
         """Get technical indicators from Alpha Vantage"""

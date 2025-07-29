@@ -5,6 +5,8 @@ services:
     build: .
     ports:
       - "8000:8000"
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
@@ -30,7 +32,9 @@ services:
   celery-worker:
     container_name: trade_bot-worker
     build: .
-    command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2
+    command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2 -Q celery,analysis,reports
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
@@ -52,6 +56,8 @@ services:
     container_name: trade_bot-beat
     build: .
     command: celery -A app.tasks.daily_tasks beat --loglevel=info
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
@@ -92,6 +98,8 @@ services:
     command: celery -A app.tasks.daily_tasks flower --port=5555 --address=0.0.0.0
     ports:
       - "5555:5555"
+    env_file:
+      - .env
     environment:
       - REDIS_HOST=trade_bot-redis
       - REDIS_PORT=6379
