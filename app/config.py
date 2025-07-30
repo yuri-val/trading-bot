@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # API Configuration
     openai_api_key: str = ""
+    llm7_api_key: str = ""  # LLM7.io API key for primary LLM provider
     alpha_vantage_key: str = ""
     news_api_key: str = ""
     twelve_data_api_key: str = ""

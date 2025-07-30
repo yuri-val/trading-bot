@@ -9,6 +9,7 @@ from .config import settings
 from .api import stocks, reports
 from .services.json_storage import JSONStorage
 from .services.data_collector import DataCollector
+from .services.llm_adapter import llm_adapter
 
 # Configure logging
 logging.basicConfig(
@@ -103,7 +104,8 @@ async def health_check():
             "timestamp": datetime.now().isoformat(),
             "services": {
                 "api": "operational",
-                "storage": storage_health.get("status", "unknown")
+                "storage": storage_health.get("status", "unknown"),
+                "llm_providers": llm_adapter.get_provider_status()
             },
             "configuration": {
                 "stable_stocks_count": len(watchlist["stable"]),
@@ -128,6 +130,30 @@ async def health_check():
             detail={
                 "status": "unhealthy",
                 "error": str(e),
+                "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+@app.get("/api/v1/llm/test")
+async def test_llm_providers():
+    """Test LLM provider connectivity"""
+    try:
+        provider_status = llm_adapter.get_provider_status()
+        connection_tests = await llm_adapter.test_connection()
+        
+        return {
+            "provider_status": provider_status,
+            "connection_tests": connection_tests,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"LLM test failed: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "error": "LLM test failed",
+                "details": str(e),
                 "timestamp": datetime.now().isoformat()
             }
         )

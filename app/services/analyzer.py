@@ -1,7 +1,6 @@
 import json
 import logging
 from typing import Dict, List, Optional
-import openai
 from datetime import datetime
 
 from ..config import settings
@@ -9,21 +8,27 @@ from ..models.stock_data import (
     StockData, AIAnalysis, TrendDirection, Recommendation, StockCategory
 )
 from ..models.reports import StockRecommendation, MarketOverview
+from .llm_adapter import llm_adapter
 
 logger = logging.getLogger(__name__)
 
 
 class LLMAnalyzer:
     def __init__(self):
-        self.client = openai.OpenAI(api_key=settings.openai_api_key)
-        self.model = "gpt-4.1-nano"
+        self.llm_adapter = llm_adapter
+        logger.info(f"LLM Analyzer initialized with providers: {self.llm_adapter.get_provider_status()}")
 
     async def analyze_stock_data(self, stock_data: StockData) -> Optional[AIAnalysis]:
         """Analyze stock data using LLM"""
         try:
             prompt = self._create_analysis_prompt(stock_data)
 
-            response = await self._call_openai(prompt, temperature=0.3)
+            response = await self.llm_adapter.chat_completion(
+                prompt=prompt, 
+                temperature=0.3, 
+                max_tokens=1000,
+                timeout=30
+            )
 
             if response:
                 analysis_data = self._parse_analysis_response(response)
@@ -141,22 +146,6 @@ Provide a conservative but actionable analysis.
             lines.append(f"- Analyst Rating: {sentiment.analyst_rating}")
 
         return '\n'.join(lines) if lines else "- Limited sentiment data available"
-
-    async def _call_openai(self, prompt: str, temperature: float = 0.3) -> Optional[str]:
-        """Make API call to OpenAI"""
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                max_tokens=1000
-            )
-
-            return response.choices[0].message.content.strip()
-
-        except Exception as e:
-            logger.error(f"OpenAI API call failed: {str(e)}")
-            return None
 
     def _parse_analysis_response(self, response: str) -> Optional[Dict]:
         """Parse LLM response into structured data"""
@@ -277,7 +266,12 @@ Provide a conservative but actionable analysis.
             # Create report prompt
             prompt = self._create_report_prompt(analyzed_stocks, stable_picks[:3], risky_picks[:3])
 
-            response = await self._call_openai(prompt, temperature=0.5)
+            response = await self.llm_adapter.chat_completion(
+                prompt=prompt, 
+                temperature=0.5, 
+                max_tokens=2000,
+                timeout=45
+            )
 
             if response:
                 return response

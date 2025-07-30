@@ -29,7 +29,7 @@ Dividend Stocks  News APIs       JSON Files    Confidence     Web Interface
 - **Storage**: JSON file-based storage system (replaced OpenSearch for simplicity)
 - **Cache/Broker**: Redis for Celery task queue
 - **Task Scheduler**: Celery with Redis broker for daily analysis
-- **LLM**: OpenAI GPT-4-1-nano for stock analysis
+- **LLM**: llm7.io with gpt-4.1-nano-2025-04-14 (primary), OpenAI GPT-4 (fallback)
 - **Deployment**: Docker + Docker Compose
 
 ### Data Sources:
@@ -150,6 +150,9 @@ pip install -r requirements.txt
 # Test core services individually
 python -c "from app.config import settings; print(f'Config loaded: {settings.max_stable_stocks} stable stocks')"
 python -c "from app.services.json_storage import JSONStorage; js = JSONStorage(); print(js.get_health_status())"
+
+# Test LLM providers
+curl http://localhost:8000/api/v1/llm/test
 ```
 
 ### API Testing
@@ -246,10 +249,13 @@ The system automatically updates stock lists daily by collecting from multiple i
 - Automatic cleanup of old data (configurable retention period)
 
 ### LLM Integration:
-- Uses **GPT-4-1-nano** model for cost efficiency
+- **Primary Provider**: llm7.io with **gpt-4.1-nano-2025-04-14** model for cost efficiency and performance
+- **Fallback Provider**: OpenAI with GPT-4 for reliability
+- **Multi-provider architecture** ensures high availability with automatic failover
 - Each stock analyzed individually with comprehensive prompts
 - Analysis includes trend direction, risk assessment, price targets, and reasoning
 - Confidence levels and recommendation categories guide report generation
+- **Test endpoint**: `/api/v1/llm/test` for provider connectivity verification
 
 ### Data Flow:
 1. **Stock Collection** (09:00 UTC): Web scraping and validation
@@ -261,8 +267,11 @@ The system automatically updates stock lists daily by collecting from multiple i
 ## Environment Variables
 
 ```bash
-# Required API Keys
-OPENAI_API_KEY=your_openai_api_key
+# LLM API Keys (Primary: llm7.io, Fallback: OpenAI)
+LLM7_API_KEY=your_llm7_api_key          # Primary LLM provider (llm7.io)
+OPENAI_API_KEY=your_openai_api_key      # Fallback LLM provider
+
+# Data Source API Keys
 ALPHA_VANTAGE_KEY=your_alpha_vantage_key
 
 # Optional API Keys  
