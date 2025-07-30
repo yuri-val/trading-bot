@@ -1820,3 +1820,291 @@ label {
         gap: 10px;
     }
 }
+
+/* Summary Report Specific Styles */
+.summary-report-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+.period-info, .generation-time {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.period-overview-section .overview-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.overview-stat {
+    text-align: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 1px solid #e9ecef;
+}
+
+.overview-stat .stat-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #3498db;
+    margin-bottom: 8px;
+}
+
+.overview-stat .stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Performers Section */
+.performers-section {
+    padding: 0;
+}
+
+.performers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    padding: 20px;
+}
+
+@media (max-width: 768px) {
+    .performers-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.performer-category {
+    background: #f8f9fa;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e9ecef;
+}
+
+.performer-category h6 {
+    background: #fff;
+    margin: 0;
+    padding: 15px;
+    border-bottom: 1px solid #e9ecef;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.performer-category h6 i {
+    color: #3498db;
+}
+
+.performer-list {
+    padding: 15px;
+}
+
+.performer-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 12px 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.performer-item:last-child {
+    margin-bottom: 0;
+}
+
+.performer-item:hover {
+    background: #e3f2fd;
+    border-color: #3498db;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.1);
+}
+
+.performer-symbol {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.performer-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.performer-stats .frequency {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.performer-stats .return {
+    font-size: 0.9rem;
+    color: #28a745;
+    font-weight: 600;
+}
+
+/* Market Trends Section */
+.market-trends-section {
+    padding: 0;
+}
+
+.trends-content {
+    padding: 20px;
+}
+
+.themes-section {
+    margin-bottom: 25px;
+}
+
+.themes-section h6 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.sector-performance {
+    margin-top: 20px;
+}
+
+.sector-performance h6 {
+    margin: 0 0 15px 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.sector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+
+.sector-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.sector-name {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.sector-performance {
+    font-weight: 600;
+    color: #3498db;
+}
+
+/* Insights Section */
+.insights-section {
+    padding: 0;
+}
+
+.insights-list {
+    padding: 20px;
+}
+
+.insight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.insight-item:last-child {
+    border-bottom: none;
+}
+
+.insight-item i {
+    color: #28a745;
+    font-size: 1.1rem;
+    margin-top: 2px;
+}
+
+.insight-item span {
+    line-height: 1.5;
+    color: #555;
+}
+
+/* Outlook Section */
+.outlook-section {
+    padding: 0;
+}
+
+.outlook-content {
+    padding: 20px;
+    background: #f8f9fa;
+    border-left: 4px solid #3498db;
+}
+
+.outlook-content p {
+    margin: 0;
+    line-height: 1.7;
+    color: #555;
+    font-style: italic;
+}
+
+/* Detailed Content Section */
+.detailed-content-section {
+    padding: 0;
+}
+
+.detailed-content {
+    padding: 20px;
+    line-height: 1.7;
+    color: #333;
+}
+
+.detailed-content h3 {
+    color: #2c3e50;
+    margin: 25px 0 15px 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #3498db;
+}
+
+.detailed-content p {
+    margin-bottom: 15px;
+}
+
+.detailed-content li {
+    margin-bottom: 8px;
+    padding-left: 5px;
+}
+
+.detailed-content strong {
+    color: #2c3e50;
+}
+
+/* Success Message */
+.success-message {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 20px;
+    background: rgba(40, 167, 69, 0.1);
+    color: #155724;
+    border-top: 1px solid #e9ecef;
+    font-weight: 500;
+}
+
+.success-message i {
+    color: #28a745;
+    font-size: 1.2rem;
+}

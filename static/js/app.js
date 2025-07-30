@@ -854,16 +854,163 @@ class TradingBotApp {
         showLoading('summary-report');
         try {
             const result = await api.generateSummaryReport(startDate, endDate);
+            const report = result.report;
             
             document.getElementById('summary-report').innerHTML = `
                 <div class="summary-report-content">
+                    <!-- Report Header -->
                     <div class="report-header">
-                        <h4>Summary Report Generated</h4>
-                        <span class="report-id">ID: ${result.report_id}</span>
+                        <div class="report-title">
+                            <h4><i class="fas fa-chart-area"></i> ${report.report_type || 'Summary Report'}</h4>
+                            <span class="report-id">${report.report_id}</span>
+                        </div>
+                        <div class="report-meta">
+                            <div class="period-info">
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>${formatDate(report.start_date)} - ${formatDate(report.end_date)}</span>
+                            </div>
+                            <div class="generation-time">
+                                <i class="fas fa-clock"></i>
+                                <span>Generated: ${formatDate(result.generated_at)}</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="report-details">
-                        <pre>${JSON.stringify(result.report, null, 2)}</pre>
+
+                    <!-- Period Overview -->
+                    <div class="section period-overview-section">
+                        <h5><i class="fas fa-info-circle"></i> Period Overview</h5>
+                        <div class="overview-stats">
+                            <div class="overview-stat">
+                                <div class="stat-value">${report.days_analyzed}</div>
+                                <div class="stat-label">Days Analyzed</div>
+                            </div>
+                            <div class="overview-stat">
+                                <div class="stat-value">${report.performance_metrics?.total_recommendations || 0}</div>
+                                <div class="stat-label">Total Recommendations</div>
+                            </div>
+                            <div class="overview-stat">
+                                <div class="stat-value">${formatPercentage(report.performance_metrics?.avg_confidence_score || 0)}</div>
+                                <div class="stat-label">Avg Confidence</div>
+                            </div>
+                            <div class="overview-stat">
+                                <div class="stat-value">${report.performance_metrics?.stable_picks_count || 0}/${report.performance_metrics?.risky_picks_count || 0}</div>
+                                <div class="stat-label">Stable/Risky</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Performers -->
+                    <div class="section performers-section">
+                        <h5><i class="fas fa-trophy"></i> Top Performers</h5>
+                        <div class="performers-grid">
+                            <!-- Stable Performers -->
+                            <div class="performer-category">
+                                <h6><i class="fas fa-shield-alt"></i> Top Stable Performers</h6>
+                                <div class="performer-list">
+                                    ${(report.top_stable_performers || []).map(performer => `
+                                        <div class="performer-item">
+                                            <div class="performer-symbol">${performer.symbol}</div>
+                                            <div class="performer-stats">
+                                                <span class="frequency">Recommended ${performer.frequency} time${performer.frequency !== 1 ? 's' : ''}</span>
+                                                ${performer.avg_return ? `<span class="return">Avg Return: ${formatPercentage(performer.avg_return)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${(report.top_stable_performers || []).length === 0 ? '<div class="no-data">No stable recommendations in this period</div>' : ''}
+                                </div>
+                            </div>
+
+                            <!-- Risky Performers -->
+                            <div class="performer-category">
+                                <h6><i class="fas fa-rocket"></i> Top Risky Performers</h6>
+                                <div class="performer-list">
+                                    ${(report.top_risky_performers || []).map(performer => `
+                                        <div class="performer-item">
+                                            <div class="performer-symbol">${performer.symbol}</div>
+                                            <div class="performer-stats">
+                                                <span class="frequency">Recommended ${performer.frequency} time${performer.frequency !== 1 ? 's' : ''}</span>
+                                                ${performer.avg_return ? `<span class="return">Avg Return: ${formatPercentage(performer.avg_return)}</span>` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                    ${(report.top_risky_performers || []).length === 0 ? '<div class="no-data">No risky recommendations in this period</div>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Trends -->
+                    ${report.market_trends ? `
+                        <div class="section market-trends-section">
+                            <h5><i class="fas fa-chart-line"></i> Market Trends</h5>
+                            <div class="trends-content">
+                                <!-- Dominant Themes -->
+                                ${report.market_trends.dominant_themes && report.market_trends.dominant_themes.length > 0 ? `
+                                    <div class="themes-section">
+                                        <h6>Dominant Themes</h6>
+                                        <div class="theme-tags">
+                                            ${report.market_trends.dominant_themes.map(theme => `<span class="theme-tag">${theme}</span>`).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+
+                                <!-- Sector Performance -->
+                                ${report.market_trends.sector_performance ? `
+                                    <div class="sector-performance">
+                                        <h6>Sector Performance</h6>
+                                        <div class="sector-grid">
+                                            ${Object.entries(report.market_trends.sector_performance).map(([sector, performance]) => `
+                                                <div class="sector-item">
+                                                    <span class="sector-name">${sector.charAt(0).toUpperCase() + sector.slice(1)}</span>
+                                                    <span class="sector-performance">${performance ? formatPercentage(performance) : 'N/A'}</span>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Key Insights -->
+                    ${report.insights && report.insights.length > 0 ? `
+                        <div class="section insights-section">
+                            <h5><i class="fas fa-lightbulb"></i> Key Insights</h5>
+                            <div class="insights-list">
+                                ${report.insights.map(insight => `
+                                    <div class="insight-item">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>${insight}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Next Month Outlook -->
+                    ${report.next_month_outlook ? `
+                        <div class="section outlook-section">
+                            <h5><i class="fas fa-crystal-ball"></i> Next Month Outlook</h5>
+                            <div class="outlook-content">
+                                <p>${report.next_month_outlook.replace(/\n/g, '<br>')}</p>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Detailed Report Content -->
+                    ${report.content ? `
+                        <div class="section detailed-content-section">
+                            <h5><i class="fas fa-file-text"></i> Detailed Analysis</h5>
+                            <div class="detailed-content">
+                                ${this.formatReportContent(report.content)}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <!-- Success Message -->
+                    <div class="success-message">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Summary report generated successfully for ${report.days_analyzed} days of analysis</span>
                     </div>
                 </div>
             `;
