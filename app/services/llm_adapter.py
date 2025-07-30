@@ -28,9 +28,9 @@ class LLMAdapter:
         self.llm7_client = None
         self.openai_client = None
         self.primary_model = "gpt-4.1-nano-2025-04-14"
-        self.fallback_model = "gpt-4-1106-preview"
-        self.llm7_base_url = "https://llm7.io/v1"
-        
+        self.fallback_model = "gpt-4.1-nano"
+        self.llm7_base_url = "https://api.llm7.io/v1"
+
         self._init_llm7()
         self._init_openai()
 
@@ -42,7 +42,7 @@ class LLMAdapter:
                 if ChatLLM7:
                     try:
                         self.llm7_client = ChatLLM7(
-                            api_key=settings.llm7_api_key,
+                            api_key=settings.llm7_api_key if settings.llm7_api_key else "unused",
                             model=self.primary_model,
                             base_url=self.llm7_base_url
                         )
@@ -50,7 +50,7 @@ class LLMAdapter:
                         return
                     except Exception as e:
                         logger.warning(f"Langchain wrapper failed: {str(e)}, will use direct HTTP")
-                
+
                 # Use direct HTTP as fallback
                 self.llm7_client = "direct_http"  # Flag to use direct HTTP
                 logger.info("LLM7.io client initialized with direct HTTP")
@@ -131,7 +131,7 @@ class LLMAdapter:
                     temperature=temperature,
                     max_tokens=max_tokens
                 )
-                
+
                 if hasattr(response, 'content'):
                     return response.content.strip()
                 elif isinstance(response, str):
@@ -142,25 +142,25 @@ class LLMAdapter:
             else:
                 logger.error("LLM7 client not properly initialized")
                 return None
-                
+
         except Exception as e:
             logger.error(f"LLM7.io API call failed: {str(e)}")
             raise
-    
+
     async def _call_llm7_direct(self, prompt: str, temperature: float, max_tokens: int) -> Optional[str]:
         """Call LLM7.io API directly via HTTP"""
         headers = {
-            "Authorization": f"Bearer {settings.llm7_api_key}",
+            "Authorization": f"Bearer {settings.llm7_api_key if settings.llm7_api_key else 'unused'}",
             "Content-Type": "application/json"
         }
-        
+
         payload = {
             "model": self.primary_model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": temperature,
             "max_tokens": max_tokens
         }
-        
+
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 f"{self.llm7_base_url}/chat/completions",
