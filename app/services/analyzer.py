@@ -123,12 +123,12 @@ Provide a conservative but actionable analysis.
         if hasattr(fundamental, 'market_cap') and fundamental.market_cap:
             market_cap_b = fundamental.market_cap / 1e9
             lines.append(f"- Market Cap: ${market_cap_b:.1f}B")
-        if hasattr(fundamental, 'dividend_yield') and fundamental.dividend_yield:
-            lines.append(f"- Dividend Yield: {fundamental.dividend_yield*100:.2f}%")
+        if hasattr(fundamental, 'dividend_yield') and fundamental.dividend_yield is not None:
+            lines.append(f"- Dividend Yield: {(fundamental.dividend_yield or 0)*100:.2f}%")
         if hasattr(fundamental, 'eps_ttm') and fundamental.eps_ttm:
             lines.append(f"- EPS (TTM): ${fundamental.eps_ttm:.2f}")
-        if hasattr(fundamental, 'revenue_growth') and fundamental.revenue_growth:
-            lines.append(f"- Revenue Growth: {fundamental.revenue_growth*100:.1f}%")
+        if hasattr(fundamental, 'revenue_growth') and fundamental.revenue_growth is not None:
+            lines.append(f"- Revenue Growth: {(fundamental.revenue_growth or 0)*100:.1f}%")
 
         return '\n'.join(lines) if lines else "- Limited fundamental data available"
 

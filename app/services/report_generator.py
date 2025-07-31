@@ -401,7 +401,12 @@ Provide a 2-3 sentence outlook focusing on:
 Keep it concise and actionable.
 """
             
-            response = await self.analyzer._call_openai(prompt, temperature=0.4)
+            response = await self.analyzer.llm_adapter.chat_completion(
+                prompt=prompt, 
+                temperature=0.4, 
+                max_tokens=500,
+                timeout=30
+            )
             
             if response:
                 return response
@@ -464,8 +469,8 @@ allocation strategy. Monitor for any significant market shifts or volatility cha
         if ai_stable_rec:
             content += f"""
 **Recommended Stock: {ai_stable_rec.symbol}**
-- Current Price: ${ai_stable_rec.current_price:.2f if ai_stable_rec.current_price else 'N/A'}
-- Target Price: ${ai_stable_rec.target_price:.2f if ai_stable_rec.target_price else 'N/A'}
+- Current Price: ${f'{ai_stable_rec.current_price:.2f}' if ai_stable_rec.current_price is not None else 'N/A'}
+- Target Price: ${f'{ai_stable_rec.target_price:.2f}' if ai_stable_rec.target_price is not None else 'N/A'}
 - Expected Return: {ai_stable_rec.expected_return:.1%} if ai_stable_rec.expected_return else 'N/A'
 - Confidence Level: {ai_stable_rec.confidence:.1%}
 - News Sentiment: {ai_stable_rec.news_sentiment}
@@ -484,8 +489,8 @@ allocation strategy. Monitor for any significant market shifts or volatility cha
         if ai_risky_rec:
             content += f"""
 **Recommended Stock: {ai_risky_rec.symbol}**
-- Current Price: ${ai_risky_rec.current_price:.2f if ai_risky_rec.current_price else 'N/A'}
-- Target Price: ${ai_risky_rec.target_price:.2f if ai_risky_rec.target_price else 'N/A'}
+- Current Price: ${f'{ai_risky_rec.current_price:.2f}' if ai_risky_rec.current_price is not None else 'N/A'}
+- Target Price: ${f'{ai_risky_rec.target_price:.2f}' if ai_risky_rec.target_price is not None else 'N/A'}
 - Expected Return: {ai_risky_rec.expected_return:.1%} if ai_risky_rec.expected_return else 'N/A'
 - Confidence Level: {ai_risky_rec.confidence:.1%}
 - News Sentiment: {ai_risky_rec.news_sentiment}

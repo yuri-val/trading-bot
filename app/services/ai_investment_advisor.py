@@ -94,11 +94,27 @@ class AIInvestmentAdvisor:
         """Get current stock data using yfinance"""
         try:
             ticker = yf.Ticker(symbol)
-            info = ticker.info
-            hist = ticker.history(period="5d")
             
-            if hist.empty:
+            # Get historical data with error handling
+            try:
+                hist = ticker.history(period="5d")
+                if hist.empty:
+                    logger.warning(f"No historical data available for {symbol}")
+                    return None
+            except Exception as hist_error:
+                logger.error(f"Error getting historical data for {symbol}: {str(hist_error)}")
                 return None
+            
+            # Get info with error handling for 404s
+            try:
+                info = ticker.info
+                # Sometimes yfinance returns empty dict for invalid symbols
+                if not info or 'regularMarketPrice' not in info and 'currentPrice' not in info:
+                    logger.warning(f"No market data available for {symbol} - possibly invalid symbol")
+                    return None
+            except Exception as info_error:
+                logger.warning(f"Error getting info for {symbol}: {str(info_error)} - using historical data only")
+                info = {}
             
             current_price = hist['Close'].iloc[-1]
             prev_close = hist['Close'].iloc[-2] if len(hist) > 1 else current_price
@@ -196,29 +212,35 @@ class AIInvestmentAdvisor:
         try:
             ticker = yf.Ticker(symbol)
             
-            # Get analyst recommendations
-            recommendations = ticker.recommendations
-            upgrades_downgrades = ticker.upgrades_downgrades
-            
             metrics = {
                 'analyst_recommendations': None,
                 'recent_upgrades_downgrades': None
             }
             
-            if recommendations is not None and not recommendations.empty:
-                latest_rec = recommendations.tail(1)
-                if not latest_rec.empty:
-                    metrics['analyst_recommendations'] = {
-                        'strongBuy': int(latest_rec['strongBuy'].iloc[-1]) if 'strongBuy' in latest_rec.columns else 0,
-                        'buy': int(latest_rec['buy'].iloc[-1]) if 'buy' in latest_rec.columns else 0,
-                        'hold': int(latest_rec['hold'].iloc[-1]) if 'hold' in latest_rec.columns else 0,
-                        'sell': int(latest_rec['sell'].iloc[-1]) if 'sell' in latest_rec.columns else 0,
-                        'strongSell': int(latest_rec['strongSell'].iloc[-1]) if 'strongSell' in latest_rec.columns else 0
-                    }
+            # Get analyst recommendations with error handling
+            try:
+                recommendations = ticker.recommendations
+                if recommendations is not None and not recommendations.empty:
+                    latest_rec = recommendations.tail(1)
+                    if not latest_rec.empty:
+                        metrics['analyst_recommendations'] = {
+                            'strongBuy': int(latest_rec['strongBuy'].iloc[-1]) if 'strongBuy' in latest_rec.columns else 0,
+                            'buy': int(latest_rec['buy'].iloc[-1]) if 'buy' in latest_rec.columns else 0,
+                            'hold': int(latest_rec['hold'].iloc[-1]) if 'hold' in latest_rec.columns else 0,
+                            'sell': int(latest_rec['sell'].iloc[-1]) if 'sell' in latest_rec.columns else 0,
+                            'strongSell': int(latest_rec['strongSell'].iloc[-1]) if 'strongSell' in latest_rec.columns else 0
+                        }
+            except Exception as rec_error:
+                logger.warning(f"Could not get analyst recommendations for {symbol}: {str(rec_error)}")
             
-            if upgrades_downgrades is not None and not upgrades_downgrades.empty:
-                recent_changes = upgrades_downgrades.tail(3)
-                metrics['recent_upgrades_downgrades'] = recent_changes.to_dict('records')
+            # Get upgrades/downgrades with error handling
+            try:
+                upgrades_downgrades = ticker.upgrades_downgrades
+                if upgrades_downgrades is not None and not upgrades_downgrades.empty:
+                    recent_changes = upgrades_downgrades.tail(3)
+                    metrics['recent_upgrades_downgrades'] = recent_changes.to_dict('records')
+            except Exception as upg_error:
+                logger.warning(f"Could not get upgrades/downgrades for {symbol}: {str(upg_error)}")
             
             return metrics
             
@@ -244,7 +266,12 @@ class AIInvestmentAdvisor:
             prompt = self._create_analysis_prompt(candidates, summary_report, category_name, allocation)
             
             # Get AI analysis
-            response = await self.analyzer._call_openai(prompt, temperature=0.3)
+            response = await self.analyzer.llm_adapter.chat_completion(
+                prompt=prompt, 
+                temperature=0.3, 
+                max_tokens=1000,
+                timeout=30
+            )
             
             if response:
                 # Parse AI response
@@ -280,7 +307,7 @@ Stock: {candidate['symbol']}
 - Daily change: {stock_data.get('change_percent', 0):.2f}%
 - Market cap: ${stock_data.get('market_cap', 0):,}
 - P/E ratio: {stock_data.get('pe_ratio', 'N/A')}
-- Dividend yield: {stock_data.get('dividend_yield', 0)*100:.2f}% if stock_data.get('dividend_yield') else 'N/A'
+- Dividend yield: {(stock_data.get('dividend_yield', 0) or 0)*100:.2f}% if stock_data.get('dividend_yield') is not None else 'N/A'
 - Beta: {stock_data.get('beta', 'N/A')}
 - 52-week range: ${stock_data.get('52_week_low', 0):.2f} - ${stock_data.get('52_week_high', 0):.2f}
 - Analyst target: ${stock_data.get('target_price', 'N/A')}
