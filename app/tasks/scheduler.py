@@ -23,6 +23,16 @@ celery_app.conf.beat_schedule = {
         }
     },
     
+    # Monthly summary report on 1st day of month at 08:00 UTC (11:00 Kyiv time)
+    'monthly-summary-report': {
+        'task': 'app.tasks.daily_tasks.generate_monthly_summary_report_task',
+        'schedule': crontab(hour=8, minute=0, day_of_month=1),  # 1st day of month
+        'options': {
+            'queue': 'reports',
+            'routing_key': 'reports.monthly'
+        }
+    },
+    
     # Health check every hour
     'system-health-check': {
         'task': 'app.tasks.daily_tasks.health_check_task',
@@ -179,6 +189,8 @@ def cancel_task(task_id: str):
 
 def purge_queue(queue_name: str):
     """Purge all tasks from a specific queue"""
+    # Note: celery_app.control.purge() purges all queues
+    # For specific queue purging, need to use: celery_app.control.purge(queue=queue_name)
     celery_app.control.purge()
 
 

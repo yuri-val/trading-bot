@@ -116,6 +116,11 @@ python -m app.tasks.daily_tasks summary
 python run.py summary                     # Alternative using run script
 python run.py summary --days 7           # Custom number of days
 
+# Generate monthly summary report
+python -m app.tasks.daily_tasks monthly
+python run.py monthly                     # Alternative using run script
+python run.py monthly --months 1         # Custom number of months
+
 # Test individual components
 python -c "from app.services.stock_list_collector import StockListCollector; import asyncio; slc = StockListCollector(); print(asyncio.run(slc.update_stock_lists()))"
 
@@ -233,6 +238,10 @@ The system automatically updates stock lists daily by collecting from multiple i
 
 - **Weekly Summary**: 10:00 UTC Monday (13:00 Kyiv)
   - Generate 30-day summary report with performance analysis
+
+- **Monthly Summary**: 08:00 UTC 1st day of month (11:00 Kyiv)
+  - Generate comprehensive 3-month summary report with extended analysis
+  - Saved with "MR_" prefix for monthly reports
 
 ## Important Architecture Notes
 

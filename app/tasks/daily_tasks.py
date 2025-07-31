@@ -32,6 +32,7 @@ celery_app.conf.update(
     task_routes={
         'trading_bot.daily_analysis_task': {'queue': 'analysis'},
         'trading_bot.generate_summary_report_task': {'queue': 'reports'},
+        'trading_bot.generate_monthly_summary_report_task': {'queue': 'reports'},
         'trading_bot.health_check_task': {'queue': 'monitoring'},
         'trading_bot.test_task': {'queue': 'testing'},
     }
@@ -220,6 +221,83 @@ def generate_summary_report_task(self, start_date: str = None, end_date: str = N
         loop.close()
 
 
+@celery_app.task(bind=True, name='trading_bot.generate_monthly_summary_report_task')
+def generate_monthly_summary_report_task(self, months: int = 3):
+    """Generate monthly summary report task - runs on 1st day of month at 08:00 UTC (11:00 Kyiv time)"""
+
+    async def run_monthly_summary():
+        try:
+            logger.info(f"[{datetime.now()}] Starting monthly summary report generation...")
+
+            # Initialize services
+            storage = JSONStorage()
+            report_gen = ReportGenerator()
+
+            # Calculate date range for the report (default: last 3 months)
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=months * 30)  # Approximate months
+            
+            start_date_str = start_date.strftime("%Y-%m-%d")
+            end_date_str = end_date.strftime("%Y-%m-%d")
+
+            logger.info(f"Generating monthly summary report for period: {start_date_str} to {end_date_str} ({months} months)")
+
+            # Generate monthly summary report
+            summary_report = await report_gen.create_summary_report(start_date_str, end_date_str)
+            
+            # Save with monthly prefix
+            monthly_report_id = f"MR_{summary_report.report_id.replace('SR_', '')}"
+            summary_report.report_id = monthly_report_id
+            
+            # Save to summaries directory with monthly prefix
+            await storage.save_summary_report(summary_report)
+
+            logger.info(f"Monthly summary report generated: {summary_report.report_id}")
+            logger.info(f"Days analyzed: {summary_report.days_analyzed}")
+            logger.info(f"Total recommendations: {summary_report.performance_metrics.total_recommendations}")
+
+            # Update task status
+            self.update_state(
+                state='SUCCESS',
+                meta={
+                    'report_id': summary_report.report_id,
+                    'days_analyzed': summary_report.days_analyzed,
+                    'months_analyzed': months,
+                    'total_recommendations': summary_report.performance_metrics.total_recommendations,
+                    'completed_at': datetime.now().isoformat()
+                }
+            )
+
+            logger.info(f"[{datetime.now()}] Monthly summary report generation completed!")
+
+            return {
+                "status": "success",
+                "report_id": summary_report.report_id,
+                "days_analyzed": summary_report.days_analyzed,
+                "months_analyzed": months,
+                "total_recommendations": summary_report.performance_metrics.total_recommendations
+            }
+
+        except Exception as e:
+            logger.error(f"Monthly summary report generation failed: {str(e)}")
+            self.update_state(
+                state='FAILURE',
+                meta={
+                    'error': str(e),
+                    'failed_at': datetime.now().isoformat()
+                }
+            )
+            return {"status": "failed", "error": str(e)}
+
+    # Run the async function
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(run_monthly_summary())
+    finally:
+        loop.close()
+
+
 @celery_app.task(name='trading_bot.test_task')
 def test_task():
     """Test task to verify Celery is working"""
@@ -286,6 +364,13 @@ def run_summary_report_now(days: int = 30):
     return result
 
 
+def run_monthly_summary_report_now(months: int = 3):
+    """Manually trigger monthly summary report generation (for testing)"""
+    logger.info(f"Manually triggering monthly summary report for last {months} months")
+    result = generate_monthly_summary_report_task.delay(months)
+    return result
+
+
 if __name__ == "__main__":
     # For manual testing
     import sys
@@ -300,9 +385,14 @@ if __name__ == "__main__":
             print(f"Running summary report for last {days} days...")
             result = run_summary_report_now(days)
             print(f"Task ID: {result.id}")
+        elif sys.argv[1] == "monthly":
+            months = int(sys.argv[2]) if len(sys.argv) > 2 else 3
+            print(f"Running monthly summary report for last {months} months...")
+            result = run_monthly_summary_report_now(months)
+            print(f"Task ID: {result.id}")
         elif sys.argv[1] == "test":
             print("Running test task...")
             result = test_task.delay()
             print(f"Task ID: {result.id}")
     else:
-        print("Usage: python daily_tasks.py [daily|summary|test]")
+        print("Usage: python daily_tasks.py [daily|summary|monthly|test]")

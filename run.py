@@ -99,6 +99,20 @@ def run_summary_report(days=30, use_docker=False):
         os.system(f"python -m app.tasks.daily_tasks summary {days}")
 
 
+def run_monthly_report(months=3, use_docker=False):
+    """Generate monthly summary report"""
+    print(f"Generating monthly summary report for last {months} months...")
+    if use_docker:
+        if not check_docker_services():
+            return
+        print("Running monthly report in Docker container...")
+        result = os.system(f"docker compose exec app python -m app.tasks.daily_tasks monthly {months}")
+        if result != 0:
+            print("❌ Failed to run monthly report in Docker container")
+    else:
+        os.system(f"python -m app.tasks.daily_tasks monthly {months}")
+
+
 def run_docker():
     """Run the entire system using Docker Compose"""
     print("Starting Trading Bot system with Docker Compose...")
@@ -283,7 +297,7 @@ def main():
     parser.add_argument(
         "command",
         choices=[
-            "api", "worker", "beat", "flower", "analysis", "summary",
+            "api", "worker", "beat", "flower", "analysis", "summary", "monthly",
             "docker", "docker-dev", "stop", "logs", "containers", "tasks", "health", "status"
         ],
         help="Command to execute"
@@ -295,9 +309,15 @@ def main():
         help="Number of days for summary report (default: 30)"
     )
     parser.add_argument(
+        "--months",
+        type=int,
+        default=3,
+        help="Number of months for monthly report (default: 3)"
+    )
+    parser.add_argument(
         "--docker",
         action="store_true",
-        help="Run the command inside Docker container (for analysis, summary, worker, beat, flower)"
+        help="Run the command inside Docker container (for analysis, summary, monthly, worker, beat, flower)"
     )
 
     args = parser.parse_args()
@@ -314,6 +334,8 @@ def main():
         run_daily_analysis(args.docker)
     elif args.command == "summary":
         run_summary_report(args.days, args.docker)
+    elif args.command == "monthly":
+        run_monthly_report(args.months, args.docker)
     elif args.command == "docker":
         run_docker()
     elif args.command == "docker-dev":
