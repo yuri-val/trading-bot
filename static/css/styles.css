@@ -327,6 +327,7 @@ label {
     padding: 15px;
     background: rgba(52, 152, 219, 0.05);
     border-radius: 10px;
+    border: 1px solid rgba(52, 152, 219, 0.2);
     border-left: 4px solid #3498db;
 }
 
@@ -882,7 +883,6 @@ label {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
     color: #7f8c8d;
     font-style: italic;
     flex-direction: column;
