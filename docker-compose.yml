@@ -32,7 +32,7 @@ services:
   celery-worker:
     container_name: trade_bot-worker
     build: .
-    command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2 -Q celery,analysis,reports
+    command: celery -A app.tasks.daily_tasks worker --loglevel=info --concurrency=2 -Q celery,analysis,reports,monitoring,testing
     env_file:
       - .env
     environment:

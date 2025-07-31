@@ -32,6 +32,8 @@ celery_app.conf.update(
     task_routes={
         'trading_bot.daily_analysis_task': {'queue': 'analysis'},
         'trading_bot.generate_summary_report_task': {'queue': 'reports'},
+        'trading_bot.health_check_task': {'queue': 'monitoring'},
+        'trading_bot.test_task': {'queue': 'testing'},
     }
 )
 
