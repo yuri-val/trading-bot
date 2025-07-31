@@ -95,17 +95,25 @@ body {
     align-items: center;
     justify-content: center;
     gap: 8px;
+    text-decoration: none;  /* Remove default link underline */
 }
 
-.tab-button:hover {
+.tab-button:hover,
+.tab-button:focus {
     background: rgba(52, 152, 219, 0.1);
     color: #3498db;
+    outline: none;  /* Remove default focus outline */
 }
 
 .tab-button.active {
     background: linear-gradient(135deg, #3498db, #2980b9);
     color: white;
     box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+}
+
+.tab-button.active:hover,
+.tab-button.active:focus {
+    color: white;  /* Keep active tab text white on hover/focus */
 }
 
 /* Tab Content */
@@ -1542,7 +1550,7 @@ label {
 }
 
 .confidence-bar {
-    margin-bottom: 15px;
+    padding-bottom: 20px;
 }
 
 .confidence-bar span {
@@ -2617,47 +2625,47 @@ label {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     .ai-rec-header {
         flex-direction: column;
         gap: 15px;
         text-align: center;
     }
-    
+
     .report-info {
         flex-direction: column;
         gap: 10px;
         text-align: center;
     }
-    
+
     .report-meta {
         flex-direction: column;
         gap: 10px;
     }
-    
+
     .metrics-section {
         grid-template-columns: 1fr;
         gap: 15px;
     }
-    
+
     .metrics-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .summary-content {
         flex-direction: column;
         gap: 20px;
         text-align: center;
     }
-    
+
     .stock-symbol-xl {
         font-size: 2.5rem;
     }
-    
+
     .allocation-amount {
         font-size: 1.8rem;
     }
-    
+
     .total-amount {
         font-size: 2rem;
     }

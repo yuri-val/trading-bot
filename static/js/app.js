@@ -1,4 +1,5 @@
 // Main Application Logic
+// Supports hashtag navigation: #dashboard, #recommendations, #ai-recommendations, #stocks, #reports
 class TradingBotApp {
     constructor() {
         this.currentTab = 'dashboard';
@@ -7,7 +8,8 @@ class TradingBotApp {
 
     init() {
         this.setupEventListeners();
-        this.loadDashboard();
+        this.setupHashNavigation();
+        this.loadInitialTab();
         this.checkSystemStatus();
         
         // Set default dates for report generation
@@ -18,7 +20,9 @@ class TradingBotApp {
         // Tab navigation
         document.querySelectorAll('.tab-button').forEach(button => {
             button.addEventListener('click', (e) => {
-                this.switchTab(e.target.dataset.tab);
+                e.preventDefault();
+                const tabName = e.target.dataset.tab || e.target.closest('.tab-button').dataset.tab;
+                this.switchTab(tabName); // Will update hash by default
             });
         });
 
@@ -50,7 +54,39 @@ class TradingBotApp {
         });
     }
 
-    switchTab(tabName) {
+    setupHashNavigation() {
+        // Listen for hash changes (back/forward navigation)
+        window.addEventListener('hashchange', () => {
+            this.loadTabFromHash();
+        });
+    }
+
+    loadInitialTab() {
+        // Load tab based on current URL hash or default to dashboard
+        const hash = window.location.hash.substring(1); // Remove # symbol
+        const validTabs = ['dashboard', 'recommendations', 'ai-recommendations', 'stocks', 'reports'];
+        
+        if (hash && validTabs.includes(hash)) {
+            this.switchTab(hash, false); // false = don't update URL hash again
+        } else {
+            this.switchTab('dashboard', false);
+            // Set default hash if no valid hash exists
+            if (!hash || !validTabs.includes(hash)) {
+                window.history.replaceState(null, null, '#dashboard');
+            }
+        }
+    }
+
+    loadTabFromHash() {
+        const hash = window.location.hash.substring(1);
+        const validTabs = ['dashboard', 'recommendations', 'ai-recommendations', 'stocks', 'reports'];
+        
+        if (hash && validTabs.includes(hash) && hash !== this.currentTab) {
+            this.switchTab(hash, false); // false = don't update URL hash again
+        }
+    }
+
+    switchTab(tabName, updateHash = true) {
         // Update tab buttons
         document.querySelectorAll('.tab-button').forEach(button => {
             button.classList.remove('active');
@@ -64,6 +100,11 @@ class TradingBotApp {
         document.getElementById(tabName).classList.add('active');
 
         this.currentTab = tabName;
+
+        // Update URL hash if requested
+        if (updateHash) {
+            window.history.pushState(null, null, `#${tabName}`);
+        }
 
         // Load content for the active tab
         switch (tabName) {
