@@ -198,15 +198,21 @@ class DataCollector:
             
             metrics = data[0]  # Most recent year data
             
+            # Convert market_cap to int if it exists and is not None
+            market_cap = metrics.get('marketCap')
+            if market_cap is not None:
+                try:
+                    market_cap = int(float(market_cap))
+                except (ValueError, TypeError):
+                    market_cap = None
+            
             return FundamentalData(
-                market_cap=metrics.get('marketCap'),
+                market_cap=market_cap,
                 pe_ratio=metrics.get('peRatio'),
                 dividend_yield=metrics.get('dividendYield'),
-                eps=metrics.get('netIncomePerShare'),
+                eps_ttm=metrics.get('netIncomePerShare'),
                 revenue_growth=metrics.get('revenuePerShare'),
-                debt_to_equity=metrics.get('debtToEquity'),
-                price_to_book=metrics.get('priceToBookRatio'),
-                roe=metrics.get('returnOnEquity')
+                debt_to_equity=metrics.get('debtToEquity')
             )
             
         except Exception as e:
@@ -224,32 +230,106 @@ class DataCollector:
             )
     
     async def _get_technical_indicators(self, symbol: str) -> Optional[TechnicalIndicators]:
-        """Get technical indicators from Alpha Vantage"""
+        """Get technical indicators from Alpha Vantage with fallback to yfinance"""
+        # Try yfinance first to avoid Alpha Vantage rate limits
+        try:
+            import yfinance as yf
+            import talib
+            
+            ticker = yf.Ticker(symbol)
+            hist = ticker.history(period="1y")
+            
+            if hist.empty:
+                logger.warning(f"No historical data available for {symbol}")
+                return None
+            
+            # Calculate indicators using TA-Lib if available, otherwise basic calculations
+            try:
+                # RSI
+                rsi = talib.RSI(hist['Close'].values, timeperiod=14)[-1] if len(hist) >= 14 else None
+                
+                # MACD
+                macd_line, macd_signal, _ = talib.MACD(hist['Close'].values)
+                macd = macd_line[-1] if len(macd_line) > 0 else None
+                macd_sig = macd_signal[-1] if len(macd_signal) > 0 else None
+                
+                # SMA
+                sma_20 = talib.SMA(hist['Close'].values, timeperiod=20)[-1] if len(hist) >= 20 else None
+                sma_50 = talib.SMA(hist['Close'].values, timeperiod=50)[-1] if len(hist) >= 50 else None
+                
+                # Bollinger Bands
+                bb_upper, bb_middle, bb_lower = talib.BBANDS(hist['Close'].values, timeperiod=20)
+                bollinger_upper = bb_upper[-1] if len(bb_upper) > 0 else None
+                bollinger_lower = bb_lower[-1] if len(bb_lower) > 0 else None
+                
+            except ImportError:
+                logger.warning("TA-Lib not available, using basic calculations")
+                # Basic calculations without TA-Lib
+                close_prices = hist['Close']
+                
+                # Simple RSI calculation
+                delta = close_prices.diff()
+                gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                rs = gain / loss
+                rsi = 100 - (100 / (1 + rs)).iloc[-1] if len(close_prices) >= 14 else None
+                
+                # Simple moving averages
+                sma_20 = close_prices.rolling(window=20).mean().iloc[-1] if len(close_prices) >= 20 else None
+                sma_50 = close_prices.rolling(window=50).mean().iloc[-1] if len(close_prices) >= 50 else None
+                
+                # Simple Bollinger Bands
+                if len(close_prices) >= 20:
+                    sma_20_full = close_prices.rolling(window=20).mean()
+                    std_20 = close_prices.rolling(window=20).std()
+                    bollinger_upper = (sma_20_full + (std_20 * 2)).iloc[-1]
+                    bollinger_lower = (sma_20_full - (std_20 * 2)).iloc[-1]
+                else:
+                    bollinger_upper = None
+                    bollinger_lower = None
+                
+                macd = None
+                macd_sig = None
+            
+            return TechnicalIndicators(
+                rsi_14=float(rsi) if rsi is not None and not pd.isna(rsi) else None,
+                macd=float(macd) if macd is not None and not pd.isna(macd) else None,
+                macd_signal=float(macd_sig) if macd_sig is not None and not pd.isna(macd_sig) else None,
+                sma_20=float(sma_20) if sma_20 is not None and not pd.isna(sma_20) else None,
+                sma_50=float(sma_50) if sma_50 is not None and not pd.isna(sma_50) else None,
+                bollinger_upper=float(bollinger_upper) if bollinger_upper is not None and not pd.isna(bollinger_upper) else None,
+                bollinger_lower=float(bollinger_lower) if bollinger_lower is not None and not pd.isna(bollinger_lower) else None
+            )
+            
+        except Exception as e:
+            logger.warning(f"Error getting technical indicators from yfinance for {symbol}: {str(e)}")
+        
+        # Fallback to Alpha Vantage if yfinance fails and API key is available
         if not self.av_key:
             logger.warning("Alpha Vantage API key not provided, skipping technical indicators")
             return None
         
         try:
-            # Get RSI
+            # Get RSI with proper float conversion
             rsi_data, _ = self.ti.get_rsi(symbol=symbol, interval='daily', time_period=14, series_type='close')
-            rsi = float(rsi_data.iloc[-1]) if not rsi_data.empty else None
+            rsi = float(rsi_data.iloc[-1].iloc[0]) if not rsi_data.empty else None
             
-            # Get MACD
+            # Get MACD with proper float conversion
             macd_data, _ = self.ti.get_macd(symbol=symbol, interval='daily', series_type='close')
-            macd = float(macd_data['MACD'].iloc[-1]) if not macd_data.empty else None
-            macd_signal = float(macd_data['MACD_Signal'].iloc[-1]) if not macd_data.empty else None
+            macd = float(macd_data['MACD'].iloc[-1].iloc[0]) if not macd_data.empty else None
+            macd_signal = float(macd_data['MACD_Signal'].iloc[-1].iloc[0]) if not macd_data.empty else None
             
-            # Get SMA indicators
+            # Get SMA indicators with proper float conversion
             sma20_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=20, series_type='close')
-            sma_20 = float(sma20_data.iloc[-1]) if not sma20_data.empty else None
+            sma_20 = float(sma20_data.iloc[-1].iloc[0]) if not sma20_data.empty else None
             
             sma50_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=50, series_type='close')
-            sma_50 = float(sma50_data.iloc[-1]) if not sma50_data.empty else None
+            sma_50 = float(sma50_data.iloc[-1].iloc[0]) if not sma50_data.empty else None
             
-            # Get Bollinger Bands
+            # Get Bollinger Bands with proper float conversion
             bb_data, _ = self.ti.get_bbands(symbol=symbol, interval='daily', time_period=20, series_type='close')
-            bollinger_upper = float(bb_data['Real Upper Band'].iloc[-1]) if not bb_data.empty else None
-            bollinger_lower = float(bb_data['Real Lower Band'].iloc[-1]) if not bb_data.empty else None
+            bollinger_upper = float(bb_data['Real Upper Band'].iloc[-1].iloc[0]) if not bb_data.empty else None
+            bollinger_lower = float(bb_data['Real Lower Band'].iloc[-1].iloc[0]) if not bb_data.empty else None
             
             return TechnicalIndicators(
                 rsi_14=rsi,
