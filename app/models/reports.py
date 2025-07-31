@@ -50,6 +50,20 @@ class MarketTrends(BaseModel):
     sector_performance: SectorPerformance
 
 
+class AIInvestmentRecommendation(BaseModel):
+    symbol: str
+    category: str  # "STABLE" or "RISKY"
+    allocation: int  # 200 for stable, 50 for risky
+    confidence: float = Field(ge=0, le=1)
+    reasoning: str
+    current_price: Optional[float] = None
+    target_price: Optional[float] = None
+    expected_return: Optional[float] = None
+    risk_factors: List[str] = []
+    news_sentiment: Optional[str] = None
+    key_metrics: Dict[str, Any] = {}
+
+
 class SummaryReport(BaseModel):
     report_id: str
     start_date: datetime
@@ -62,6 +76,8 @@ class SummaryReport(BaseModel):
     market_trends: MarketTrends
     insights: List[str] = []
     next_month_outlook: str
+    ai_stable_recommendation: Optional[AIInvestmentRecommendation] = None
+    ai_risky_recommendation: Optional[AIInvestmentRecommendation] = None
     content: str
     
     class Config:

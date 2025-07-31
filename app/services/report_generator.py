@@ -7,11 +7,12 @@ from ..models.stock_data import StockData, StockCategory, Recommendation
 from ..models.reports import (
     DailyReport, SummaryReport, StockRecommendation, 
     PerformanceMetrics, TopPerformer, MarketOverview,
-    MarketTrends, SectorPerformance
+    MarketTrends, SectorPerformance, AIInvestmentRecommendation
 )
 from ..config import settings
 from .analyzer import LLMAnalyzer
 from .json_storage import JSONStorage
+from .ai_investment_advisor import AIInvestmentAdvisor
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ class ReportGenerator:
     def __init__(self):
         self.analyzer = LLMAnalyzer()
         self.storage = JSONStorage()
+        self.ai_advisor = AIInvestmentAdvisor()
     
     async def create_daily_report(self, analyzed_stocks: List[StockData]) -> DailyReport:
         """Create daily investment report"""
@@ -234,9 +236,27 @@ class ReportGenerator:
             # Generate outlook
             outlook = await self._generate_outlook(daily_reports)
             
-            # Create summary content
+            # Generate AI investment recommendations
+            logger.info("Generating AI investment recommendations...")
+            temp_report = SummaryReport(
+                report_id=f"SR_{end_date}_30D_TEMP",
+                start_date=datetime.strptime(start_date, "%Y-%m-%d"),
+                end_date=datetime.strptime(end_date, "%Y-%m-%d"),
+                days_analyzed=len(daily_reports),
+                performance_metrics=performance_metrics,
+                top_stable_performers=top_stable_performers,
+                top_risky_performers=top_risky_performers,
+                market_trends=market_trends,
+                insights=insights,
+                next_month_outlook=outlook,
+                content=""
+            )
+            
+            ai_stable_rec, ai_risky_rec = await self.ai_advisor.generate_investment_recommendations(temp_report)
+            
+            # Create summary content with AI recommendations
             summary_content = await self._create_summary_content(
-                daily_reports, performance_metrics, top_stable_performers, top_risky_performers
+                daily_reports, performance_metrics, top_stable_performers, top_risky_performers, ai_stable_rec, ai_risky_rec
             )
             
             report = SummaryReport(
@@ -250,6 +270,8 @@ class ReportGenerator:
                 market_trends=market_trends,
                 insights=insights,
                 next_month_outlook=outlook,
+                ai_stable_recommendation=ai_stable_rec,
+                ai_risky_recommendation=ai_risky_rec,
                 content=summary_content
             )
             
@@ -401,7 +423,9 @@ allocation strategy. Monitor for any significant market shifts or volatility cha
     async def _create_summary_content(self, daily_reports: List[Dict], 
                                     metrics: PerformanceMetrics,
                                     stable_performers: List[TopPerformer],
-                                    risky_performers: List[TopPerformer]) -> str:
+                                    risky_performers: List[TopPerformer],
+                                    ai_stable_rec: Optional[AIInvestmentRecommendation] = None,
+                                    ai_risky_rec: Optional[AIInvestmentRecommendation] = None) -> str:
         """Create detailed summary content"""
         
         content = f"""
@@ -432,11 +456,61 @@ allocation strategy. Monitor for any significant market shifts or volatility cha
 - Most frequent risky pick: {risky_performers[0].symbol if risky_performers else 'N/A'}
 - System reliability: {len(daily_reports)/30*100:.0f}% daily coverage
 
+## AI Investment Recommendations
+
+### Stable Investment ($200)
+"""
+        
+        if ai_stable_rec:
+            content += f"""
+**Recommended Stock: {ai_stable_rec.symbol}**
+- Current Price: ${ai_stable_rec.current_price:.2f if ai_stable_rec.current_price else 'N/A'}
+- Target Price: ${ai_stable_rec.target_price:.2f if ai_stable_rec.target_price else 'N/A'}
+- Expected Return: {ai_stable_rec.expected_return:.1%} if ai_stable_rec.expected_return else 'N/A'
+- Confidence Level: {ai_stable_rec.confidence:.1%}
+- News Sentiment: {ai_stable_rec.news_sentiment}
+
+**Investment Reasoning:**
+{ai_stable_rec.reasoning}
+
+**Key Risk Factors:**
+{', '.join(ai_stable_rec.risk_factors) if ai_stable_rec.risk_factors else 'Standard market risks'}
+"""
+        else:
+            content += "AI analysis not available for stable category.\n"
+        
+        content += "\n### Risky Investment ($50)\n"
+        
+        if ai_risky_rec:
+            content += f"""
+**Recommended Stock: {ai_risky_rec.symbol}**
+- Current Price: ${ai_risky_rec.current_price:.2f if ai_risky_rec.current_price else 'N/A'}
+- Target Price: ${ai_risky_rec.target_price:.2f if ai_risky_rec.target_price else 'N/A'}
+- Expected Return: {ai_risky_rec.expected_return:.1%} if ai_risky_rec.expected_return else 'N/A'
+- Confidence Level: {ai_risky_rec.confidence:.1%}
+- News Sentiment: {ai_risky_rec.news_sentiment}
+
+**Investment Reasoning:**
+{ai_risky_rec.reasoning}
+
+**Key Risk Factors:**
+{', '.join(ai_risky_rec.risk_factors) if ai_risky_rec.risk_factors else 'Higher volatility expected'}
+"""
+        else:
+            content += "AI analysis not available for risky category.\n"
+        
+        content += f"""
+
 ## Analysis Quality
 The automated analysis system maintained {'high' if metrics.avg_confidence_score > 0.7 else 'moderate' if metrics.avg_confidence_score > 0.5 else 'developing'} 
 confidence levels throughout the period, indicating {'strong' if metrics.avg_confidence_score > 0.7 else 'adequate'} data quality and analysis reliability.
 
-*This report summarizes automated investment analysis. Individual research and due diligence are recommended.*
+## Investment Strategy Summary
+Based on AI analysis of market data, news sentiment, and technical indicators, the recommended portfolio allocation is:
+- **Stable Investment**: ${settings.stable_investment} in {ai_stable_rec.symbol if ai_stable_rec else 'TBD'}
+- **Growth Investment**: ${settings.risky_investment} in {ai_risky_rec.symbol if ai_risky_rec else 'TBD'}
+
+*This report includes AI-generated investment analysis. Individual research and due diligence are strongly recommended before making investment decisions.*
 """
         
         return content

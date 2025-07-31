@@ -1,13 +1,21 @@
-import yfinance as yf
 import requests
 import pandas as pd
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Dict, List, Optional
-from alpha_vantage.timeseries import TimeSeries
-from alpha_vantage.techindicators import TechIndicators
-import requests
 import logging
+
+try:
+    import yfinance as yf
+except ImportError:
+    yf = None
+
+try:
+    from alpha_vantage.timeseries import TimeSeries
+    from alpha_vantage.techindicators import TechIndicators
+except ImportError:
+    TimeSeries = None
+    TechIndicators = None
 
 from ..config import settings
 from ..models.stock_data import (
@@ -29,9 +37,12 @@ class DataCollector:
         self.fmp_api_key = settings.fmp_api_key
         self.stock_collector = StockListCollector()
         self.storage = JSONStorage()
-        if self.av_key:
+        if self.av_key and TimeSeries and TechIndicators:
             self.ts = TimeSeries(key=self.av_key, output_format='pandas')
             self.ti = TechIndicators(key=self.av_key, output_format='pandas')
+        else:
+            self.ts = None
+            self.ti = None
         
         # Financial Modeling Prep base URL
         self.fmp_base_url = "https://financialmodelingprep.com/api/v3"
@@ -233,8 +244,13 @@ class DataCollector:
         """Get technical indicators from Alpha Vantage with fallback to yfinance"""
         # Try yfinance first to avoid Alpha Vantage rate limits
         try:
-            import yfinance as yf
-            import talib
+            if not yf:
+                raise ImportError("yfinance not available")
+            
+            try:
+                import talib
+            except ImportError:
+                talib = None
             
             ticker = yf.Ticker(symbol)
             hist = ticker.history(period="1y")
@@ -258,11 +274,11 @@ class DataCollector:
                 sma_50 = talib.SMA(hist['Close'].values, timeperiod=50)[-1] if len(hist) >= 50 else None
                 
                 # Bollinger Bands
-                bb_upper, bb_middle, bb_lower = talib.BBANDS(hist['Close'].values, timeperiod=20)
+                bb_upper, _, bb_lower = talib.BBANDS(hist['Close'].values, timeperiod=20)
                 bollinger_upper = bb_upper[-1] if len(bb_upper) > 0 else None
                 bollinger_lower = bb_lower[-1] if len(bb_lower) > 0 else None
                 
-            except ImportError:
+            except (ImportError, AttributeError):
                 logger.warning("TA-Lib not available, using basic calculations")
                 # Basic calculations without TA-Lib
                 close_prices = hist['Close']
@@ -312,24 +328,24 @@ class DataCollector:
         try:
             # Get RSI with proper float conversion
             rsi_data, _ = self.ti.get_rsi(symbol=symbol, interval='daily', time_period=14, series_type='close')
-            rsi = float(rsi_data.iloc[-1].iloc[0]) if not rsi_data.empty else None
+            rsi = float(rsi_data.iloc[-1]) if not rsi_data.empty else None
             
             # Get MACD with proper float conversion
             macd_data, _ = self.ti.get_macd(symbol=symbol, interval='daily', series_type='close')
-            macd = float(macd_data['MACD'].iloc[-1].iloc[0]) if not macd_data.empty else None
-            macd_signal = float(macd_data['MACD_Signal'].iloc[-1].iloc[0]) if not macd_data.empty else None
+            macd = float(macd_data['MACD'].iloc[-1]) if not macd_data.empty else None
+            macd_signal = float(macd_data['MACD_Signal'].iloc[-1]) if not macd_data.empty else None
             
             # Get SMA indicators with proper float conversion
             sma20_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=20, series_type='close')
-            sma_20 = float(sma20_data.iloc[-1].iloc[0]) if not sma20_data.empty else None
+            sma_20 = float(sma20_data.iloc[-1]) if not sma20_data.empty else None
             
             sma50_data, _ = self.ti.get_sma(symbol=symbol, interval='daily', time_period=50, series_type='close')
-            sma_50 = float(sma50_data.iloc[-1].iloc[0]) if not sma50_data.empty else None
+            sma_50 = float(sma50_data.iloc[-1]) if not sma50_data.empty else None
             
             # Get Bollinger Bands with proper float conversion
             bb_data, _ = self.ti.get_bbands(symbol=symbol, interval='daily', time_period=20, series_type='close')
-            bollinger_upper = float(bb_data['Real Upper Band'].iloc[-1].iloc[0]) if not bb_data.empty else None
-            bollinger_lower = float(bb_data['Real Lower Band'].iloc[-1].iloc[0]) if not bb_data.empty else None
+            bollinger_upper = float(bb_data['Real Upper Band'].iloc[-1]) if not bb_data.empty else None
+            bollinger_lower = float(bb_data['Real Lower Band'].iloc[-1]) if not bb_data.empty else None
             
             return TechnicalIndicators(
                 rsi_14=rsi,
