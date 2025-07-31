@@ -94,6 +94,10 @@ class TradingBotAPI {
         return this.request(`/api/v1/reports/summary/${reportId}`);
     }
 
+    async getLatestSummaryReport() {
+        return this.request('/api/v1/reports/summary/latest');
+    }
+
     async getReportsHistory(days = 30, reportType = 'DAILY') {
         return this.request(`/api/v1/reports/history?days=${days}&report_type=${reportType}`);
     }

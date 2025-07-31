@@ -32,6 +32,7 @@ class TradingBotApp {
         document.getElementById('analyze-stock')?.addEventListener('click', () => this.analyzeStock());
         document.getElementById('load-latest-report')?.addEventListener('click', () => this.loadLatestReport());
         document.getElementById('load-performance')?.addEventListener('click', () => this.loadPerformance());
+        document.getElementById('load-latest-summary')?.addEventListener('click', () => this.loadLatestSummaryReport());
         document.getElementById('generate-summary')?.addEventListener('click', () => this.generateSummaryReport());
 
         // Enter key for stock analysis
@@ -1138,6 +1139,19 @@ class TradingBotApp {
         }
     }
 
+    async loadLatestSummaryReport() {
+        showLoading('summary-report');
+        try {
+            const result = await api.getLatestSummaryReport();
+            
+            // Use the same display logic as generateSummaryReport
+            this.displaySummaryReport(result, true); // true = loaded, not generated
+            
+        } catch (error) {
+            showError('Failed to load latest summary report. Make sure at least one summary report has been generated.', 'summary-report');
+        }
+    }
+
     async generateSummaryReport() {
         const startDate = document.getElementById('start-date').value;
         const endDate = document.getElementById('end-date').value;
@@ -1150,7 +1164,15 @@ class TradingBotApp {
         showLoading('summary-report');
         try {
             const result = await api.generateSummaryReport(startDate, endDate);
-            const report = result.report;
+            this.displaySummaryReport(result, false); // false = generated, not loaded
+            
+        } catch (error) {
+            showError('Failed to generate summary report', 'summary-report');
+        }
+    }
+
+    displaySummaryReport(result, isLoaded = false) {
+        const report = result.report;
             
             document.getElementById('summary-report').innerHTML = `
                 <div class="summary-report-content">
@@ -1306,13 +1328,10 @@ class TradingBotApp {
                     <!-- Success Message -->
                     <div class="success-message">
                         <i class="fas fa-check-circle"></i>
-                        <span>Summary report generated successfully for ${report.days_analyzed} days of analysis</span>
+                        <span>Summary report ${isLoaded ? 'loaded' : 'generated'} successfully for ${report.days_analyzed} days of analysis</span>
                     </div>
                 </div>
             `;
-        } catch (error) {
-            showError('Failed to generate summary report', 'summary-report');
-        }
     }
 
     setDefaultDates() {

@@ -127,6 +127,49 @@ async def generate_summary_report(
         )
 
 
+@router.get("/summary/latest")
+async def get_latest_summary_report():
+    """Get the latest summary report"""
+    try:
+        from pathlib import Path
+        import json
+        import os
+        
+        summaries_dir = Path("data/summaries")
+        if not summaries_dir.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="No summary reports directory found"
+            )
+        
+        # Find the most recent summary report (both SR_ and MR_ files)
+        summary_files = list(summaries_dir.glob("*R_*.json"))
+        if not summary_files:
+            raise HTTPException(
+                status_code=404,
+                detail="No summary reports found"
+            )
+        
+        # Sort by modification time and get the latest
+        latest_file = max(summary_files, key=os.path.getmtime)
+        
+        with open(latest_file, 'r') as f:
+            summary_report = json.load(f)
+        
+        return {
+            "report": summary_report,
+            "file_path": str(latest_file),
+            "generated_at": summary_report.get('generated_at'),
+            "retrieved_at": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving latest summary report: {str(e)}"
+        )
+
+
 @router.get("/summary/{report_id}")
 async def get_summary_report(report_id: str):
     """Get a specific summary report"""
@@ -310,6 +353,7 @@ async def get_performance_summary():
             status_code=500,
             detail=f"Error calculating performance summary: {str(e)}"
         )
+
 
 
 @router.get("/summary/latest/ai-recommendations")
