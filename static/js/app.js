@@ -24,6 +24,7 @@ class TradingBotApp {
 
         // Button event listeners
         document.getElementById('refresh-watchlist')?.addEventListener('click', () => this.loadWatchlist());
+        document.getElementById('refresh-ai-recommendations')?.addEventListener('click', () => this.loadAIRecommendations());
         document.getElementById('analyze-stock')?.addEventListener('click', () => this.analyzeStock());
         document.getElementById('load-latest-report')?.addEventListener('click', () => this.loadLatestReport());
         document.getElementById('load-performance')?.addEventListener('click', () => this.loadPerformance());
@@ -71,6 +72,9 @@ class TradingBotApp {
                 break;
             case 'recommendations':
                 this.loadRecommendations();
+                break;
+            case 'ai-recommendations':
+                this.loadAIRecommendations();
                 break;
             case 'stocks':
                 this.loadWatchlist();
@@ -340,6 +344,257 @@ class TradingBotApp {
             `;
         } catch (error) {
             showError('Failed to load recommendations', 'current-recommendations');
+        }
+    }
+
+    async loadAIRecommendations() {
+        showLoading('ai-recommendations-content');
+        try {
+            const aiRecs = await api.getLatestAIRecommendations();
+            
+            document.getElementById('ai-recommendations-content').innerHTML = `
+                <div class="ai-recommendations-wrapper">
+                    <!-- Report Info Header -->
+                    <div class="ai-report-header">
+                        <div class="report-info">
+                            <div class="report-meta">
+                                <span class="report-id">${aiRecs.report_id}</span>
+                                <span class="analysis-period">${aiRecs.days_analyzed} days analyzed</span>
+                            </div>
+                            <div class="generated-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                Generated: ${formatDate(aiRecs.generated_at)}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Recommendations Grid -->
+                    <div class="ai-recommendations-grid">
+                        <!-- Stable AI Recommendation -->
+                        ${aiRecs.ai_stable_recommendation ? `
+                            <div class="ai-rec-card stable-ai-card">
+                                <div class="ai-rec-header">
+                                    <div class="rec-icon-wrapper">
+                                        <i class="fas fa-shield-alt"></i>
+                                        <span class="ai-badge">AI</span>
+                                    </div>
+                                    <div class="rec-category">
+                                        <h3>Stable Investment Pick</h3>
+                                        <p>Conservative growth strategy</p>
+                                    </div>
+                                    <div class="rec-allocation-large">
+                                        <div class="allocation-amount">${formatCurrency(aiRecs.ai_stable_recommendation.allocation)}</div>
+                                        <div class="allocation-label">Recommended Investment</div>
+                                    </div>
+                                </div>
+
+                                <div class="ai-rec-body">
+                                    <!-- Stock Symbol and Price -->
+                                    <div class="stock-info-section">
+                                        <div class="stock-symbol-xl">${aiRecs.ai_stable_recommendation.symbol}</div>
+                                        ${aiRecs.ai_stable_recommendation.current_price ? `
+                                            <div class="price-info">
+                                                <div class="current-price">$${aiRecs.ai_stable_recommendation.current_price.toFixed(2)}</div>
+                                                ${aiRecs.ai_stable_recommendation.target_price ? `
+                                                    <div class="price-targets">
+                                                        <span class="target-price">Target: $${aiRecs.ai_stable_recommendation.target_price.toFixed(2)}</span>
+                                                        ${aiRecs.ai_stable_recommendation.expected_return ? `
+                                                            <span class="expected-return">(${formatPercentage(aiRecs.ai_stable_recommendation.expected_return)} return)</span>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- Confidence and Sentiment -->
+                                    <div class="metrics-section">
+                                        <div class="confidence-section">
+                                            <div class="metric-label">AI Confidence</div>
+                                            <div class="confidence-bar-large">
+                                                <div class="confidence-fill" style="width: ${aiRecs.ai_stable_recommendation.confidence * 100}%; background-color: ${getConfidenceColor(aiRecs.ai_stable_recommendation.confidence)}"></div>
+                                                <span class="confidence-text">${formatPercentage(aiRecs.ai_stable_recommendation.confidence)}</span>
+                                            </div>
+                                        </div>
+
+                                        ${aiRecs.ai_stable_recommendation.news_sentiment ? `
+                                            <div class="sentiment-section">
+                                                <div class="metric-label">News Sentiment</div>
+                                                <div class="sentiment-indicator sentiment-${aiRecs.ai_stable_recommendation.news_sentiment.toLowerCase()}">
+                                                    <i class="fas fa-${aiRecs.ai_stable_recommendation.news_sentiment === 'POSITIVE' ? 'thumbs-up' : aiRecs.ai_stable_recommendation.news_sentiment === 'NEGATIVE' ? 'thumbs-down' : 'minus'}"></i>
+                                                    <span>${aiRecs.ai_stable_recommendation.news_sentiment}</span>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- AI Reasoning -->
+                                    <div class="reasoning-section">
+                                        <h4><i class="fas fa-brain"></i> AI Analysis</h4>
+                                        <div class="reasoning-text">
+                                            <p>${aiRecs.ai_stable_recommendation.reasoning}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Key Metrics -->
+                                    ${aiRecs.ai_stable_recommendation.key_metrics && Object.keys(aiRecs.ai_stable_recommendation.key_metrics).length > 0 ? `
+                                        <div class="key-metrics-section">
+                                            <h5>Key Financial Metrics</h5>
+                                            <div class="metrics-grid">
+                                                ${Object.entries(aiRecs.ai_stable_recommendation.key_metrics).map(([key, value]) => `
+                                                    <div class="metric-item">
+                                                        <span class="metric-label">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                                                        <span class="metric-value">${typeof value === 'number' ? (key.includes('ratio') || key.includes('beta') ? value.toFixed(2) : value.toLocaleString()) : value || 'N/A'}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+
+                                    <!-- Risk Factors -->
+                                    ${aiRecs.ai_stable_recommendation.risk_factors && aiRecs.ai_stable_recommendation.risk_factors.length > 0 ? `
+                                        <div class="risk-factors-section">
+                                            <h5><i class="fas fa-exclamation-triangle"></i> Risk Factors</h5>
+                                            <ul class="risk-factors-list">
+                                                ${aiRecs.ai_stable_recommendation.risk_factors.map(risk => `<li>${risk}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : '<div class="no-ai-rec">No AI stable recommendation available</div>'}
+
+                        <!-- Risky AI Recommendation -->
+                        ${aiRecs.ai_risky_recommendation ? `
+                            <div class="ai-rec-card risky-ai-card">
+                                <div class="ai-rec-header">
+                                    <div class="rec-icon-wrapper">
+                                        <i class="fas fa-rocket"></i>
+                                        <span class="ai-badge">AI</span>
+                                    </div>
+                                    <div class="rec-category">
+                                        <h3>Growth Investment Pick</h3>
+                                        <p>High potential growth opportunity</p>
+                                    </div>
+                                    <div class="rec-allocation-large">
+                                        <div class="allocation-amount">${formatCurrency(aiRecs.ai_risky_recommendation.allocation)}</div>
+                                        <div class="allocation-label">Recommended Investment</div>
+                                    </div>
+                                </div>
+
+                                <div class="ai-rec-body">
+                                    <!-- Stock Symbol and Price -->
+                                    <div class="stock-info-section">
+                                        <div class="stock-symbol-xl">${aiRecs.ai_risky_recommendation.symbol}</div>
+                                        ${aiRecs.ai_risky_recommendation.current_price ? `
+                                            <div class="price-info">
+                                                <div class="current-price">$${aiRecs.ai_risky_recommendation.current_price.toFixed(2)}</div>
+                                                ${aiRecs.ai_risky_recommendation.target_price ? `
+                                                    <div class="price-targets">
+                                                        <span class="target-price">Target: $${aiRecs.ai_risky_recommendation.target_price.toFixed(2)}</span>
+                                                        ${aiRecs.ai_risky_recommendation.expected_return ? `
+                                                            <span class="expected-return">(${formatPercentage(aiRecs.ai_risky_recommendation.expected_return)} return)</span>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- Confidence and Sentiment -->
+                                    <div class="metrics-section">
+                                        <div class="confidence-section">
+                                            <div class="metric-label">AI Confidence</div>
+                                            <div class="confidence-bar-large">
+                                                <div class="confidence-fill" style="width: ${aiRecs.ai_risky_recommendation.confidence * 100}%; background-color: ${getConfidenceColor(aiRecs.ai_risky_recommendation.confidence)}"></div>
+                                                <span class="confidence-text">${formatPercentage(aiRecs.ai_risky_recommendation.confidence)}</span>
+                                            </div>
+                                        </div>
+
+                                        ${aiRecs.ai_risky_recommendation.news_sentiment ? `
+                                            <div class="sentiment-section">
+                                                <div class="metric-label">News Sentiment</div>
+                                                <div class="sentiment-indicator sentiment-${aiRecs.ai_risky_recommendation.news_sentiment.toLowerCase()}">
+                                                    <i class="fas fa-${aiRecs.ai_risky_recommendation.news_sentiment === 'POSITIVE' ? 'thumbs-up' : aiRecs.ai_risky_recommendation.news_sentiment === 'NEGATIVE' ? 'thumbs-down' : 'minus'}"></i>
+                                                    <span>${aiRecs.ai_risky_recommendation.news_sentiment}</span>
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+
+                                    <!-- AI Reasoning -->
+                                    <div class="reasoning-section">
+                                        <h4><i class="fas fa-brain"></i> AI Analysis</h4>
+                                        <div class="reasoning-text">
+                                            <p>${aiRecs.ai_risky_recommendation.reasoning}</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Key Metrics -->
+                                    ${aiRecs.ai_risky_recommendation.key_metrics && Object.keys(aiRecs.ai_risky_recommendation.key_metrics).length > 0 ? `
+                                        <div class="key-metrics-section">
+                                            <h5>Key Financial Metrics</h5>
+                                            <div class="metrics-grid">
+                                                ${Object.entries(aiRecs.ai_risky_recommendation.key_metrics).map(([key, value]) => `
+                                                    <div class="metric-item">
+                                                        <span class="metric-label">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+                                                        <span class="metric-value">${typeof value === 'number' ? (key.includes('ratio') || key.includes('beta') ? value.toFixed(2) : value.toLocaleString()) : value || 'N/A'}</span>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    ` : ''}
+
+                                    <!-- Risk Factors -->
+                                    ${aiRecs.ai_risky_recommendation.risk_factors && aiRecs.ai_risky_recommendation.risk_factors.length > 0 ? `
+                                        <div class="risk-factors-section">
+                                            <h5><i class="fas fa-exclamation-triangle"></i> Risk Factors</h5>
+                                            <ul class="risk-factors-list">
+                                                ${aiRecs.ai_risky_recommendation.risk_factors.map(risk => `<li>${risk}</li>`).join('')}
+                                            </ul>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : '<div class="no-ai-rec">No AI risky recommendation available</div>'}
+                    </div>
+
+                    <!-- Investment Summary -->
+                    <div class="investment-summary">
+                        <div class="summary-header">
+                            <h3><i class="fas fa-calculator"></i> Investment Summary</h3>
+                        </div>
+                        <div class="summary-content">
+                            <div class="total-allocation">
+                                <div class="total-amount">
+                                    ${formatCurrency((aiRecs.ai_stable_recommendation?.allocation || 0) + (aiRecs.ai_risky_recommendation?.allocation || 0))}
+                                </div>
+                                <div class="total-label">Total Recommended Investment</div>
+                            </div>
+                            <div class="allocation-breakdown">
+                                <div class="breakdown-item">
+                                    <span class="category">Stable:</span>
+                                    <span class="amount">${formatCurrency(aiRecs.ai_stable_recommendation?.allocation || 0)}</span>
+                                    <span class="percentage">(${Math.round(((aiRecs.ai_stable_recommendation?.allocation || 0) / ((aiRecs.ai_stable_recommendation?.allocation || 0) + (aiRecs.ai_risky_recommendation?.allocation || 0)) * 100) || 0)}%)</span>
+                                </div>
+                                <div class="breakdown-item">
+                                    <span class="category">Growth:</span>
+                                    <span class="amount">${formatCurrency(aiRecs.ai_risky_recommendation?.allocation || 0)}</span>
+                                    <span class="percentage">(${Math.round(((aiRecs.ai_risky_recommendation?.allocation || 0) / ((aiRecs.ai_stable_recommendation?.allocation || 0) + (aiRecs.ai_risky_recommendation?.allocation || 0)) * 100) || 0)}%)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Timestamp -->
+                    <div class="data-timestamp">
+                        <i class="fas fa-clock"></i>
+                        <span>Data retrieved: ${formatDate(aiRecs.retrieved_at)}</span>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            showError('Failed to load AI recommendations. Make sure you have generated a summary report with AI analysis.', 'ai-recommendations-content');
         }
     }
 

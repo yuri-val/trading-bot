@@ -101,6 +101,11 @@ class TradingBotAPI {
     async getPerformanceSummary() {
         return this.request('/api/v1/reports/performance');
     }
+
+    // AI Recommendations
+    async getLatestAIRecommendations() {
+        return this.request('/api/v1/reports/summary/latest/ai-recommendations');
+    }
 }
 
 // Create global API instance

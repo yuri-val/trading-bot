@@ -30,6 +30,9 @@
             <button class="tab-button" data-tab="recommendations">
                 <i class="fas fa-star"></i> Recommendations
             </button>
+            <button class="tab-button" data-tab="ai-recommendations">
+                <i class="fas fa-robot"></i> AI Picks
+            </button>
             <button class="tab-button" data-tab="stocks">
                 <i class="fas fa-list"></i> Watchlist
             </button>
@@ -97,6 +100,29 @@
                 <h2>Current Investment Recommendations</h2>
                 <div id="current-recommendations" class="loading">
                     <i class="fas fa-hourglass"></i> Loading recommendations...
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Recommendations Tab -->
+        <div id="ai-recommendations" class="tab-content">
+            <div class="section">
+                <div class="section-header">
+                    <h2><i class="fas fa-robot"></i> AI Investment Recommendations</h2>
+                    <button id="refresh-ai-recommendations" class="btn btn-primary">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                
+                <div class="ai-disclaimer">
+                    <div class="disclaimer-content">
+                        <i class="fas fa-info-circle"></i>
+                        <p>AI recommendations are based on comprehensive analysis of market data, news sentiment, analyst opinions, and historical performance. These suggestions are for informational purposes only and should not be considered as financial advice.</p>
+                    </div>
+                </div>
+
+                <div id="ai-recommendations-content" class="loading">
+                    <i class="fas fa-hourglass"></i> Loading AI recommendations...
                 </div>
             </div>
         </div>

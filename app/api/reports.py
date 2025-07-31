@@ -310,3 +310,61 @@ async def get_performance_summary():
             status_code=500,
             detail=f"Error calculating performance summary: {str(e)}"
         )
+
+
+@router.get("/summary/latest/ai-recommendations")
+async def get_latest_ai_recommendations():
+    """Get AI recommendations from the latest summary report"""
+    try:
+        # Get the most recent summary report
+        from pathlib import Path
+        import json
+        import os
+        
+        summaries_dir = Path("data/summaries")
+        if not summaries_dir.exists():
+            raise HTTPException(
+                status_code=404,
+                detail="No summary reports directory found"
+            )
+        
+        # Find the most recent summary report
+        summary_files = list(summaries_dir.glob("SR_*.json"))
+        if not summary_files:
+            raise HTTPException(
+                status_code=404,
+                detail="No summary reports found"
+            )
+        
+        # Sort by modification time and get the latest
+        latest_file = max(summary_files, key=os.path.getmtime)
+        
+        with open(latest_file, 'r') as f:
+            summary_report = json.load(f)
+        
+        # Extract AI recommendations
+        ai_stable = summary_report.get('ai_stable_recommendation')
+        ai_risky = summary_report.get('ai_risky_recommendation')
+        
+        if not ai_stable and not ai_risky:
+            raise HTTPException(
+                status_code=404,
+                detail="No AI recommendations found in latest summary report"
+            )
+        
+        return {
+            "report_id": summary_report.get('report_id'),
+            "generated_at": summary_report.get('end_date'),
+            "days_analyzed": summary_report.get('days_analyzed', 0),
+            "ai_stable_recommendation": ai_stable,
+            "ai_risky_recommendation": ai_risky,
+            "retrieved_at": datetime.now().isoformat()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error retrieving AI recommendations: {str(e)}"
+        )
