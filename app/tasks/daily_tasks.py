@@ -38,6 +38,11 @@ celery_app.conf.update(
     }
 )
 
+# Import and apply scheduler configuration
+# This must be done after celery_app is created but before any tasks are defined
+from .scheduler import apply_scheduler_config
+apply_scheduler_config(celery_app)
+
 
 @celery_app.task(bind=True, name='trading_bot.daily_analysis_task')
 def daily_analysis_task(self):
@@ -236,7 +241,7 @@ def generate_monthly_summary_report_task(self, months: int = 3):
             # Calculate date range for the report (default: last 3 months)
             end_date = datetime.now()
             start_date = end_date - timedelta(days=months * 30)  # Approximate months
-            
+
             start_date_str = start_date.strftime("%Y-%m-%d")
             end_date_str = end_date.strftime("%Y-%m-%d")
 
@@ -244,11 +249,11 @@ def generate_monthly_summary_report_task(self, months: int = 3):
 
             # Generate monthly summary report
             summary_report = await report_gen.create_summary_report(start_date_str, end_date_str)
-            
+
             # Save with monthly prefix
             monthly_report_id = f"MR_{summary_report.report_id.replace('SR_', '')}"
             summary_report.report_id = monthly_report_id
-            
+
             # Save to summaries directory with monthly prefix
             await storage.save_summary_report(summary_report)
 
