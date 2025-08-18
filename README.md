@@ -6,7 +6,7 @@ An automated stock analysis and investment recommendation system that provides d
 
 - **Dynamic Stock Lists**: Daily collection of stable and risky stocks from internet sources
 - **Daily Stock Analysis**: Automated collection and analysis of 40+ stocks
-- **LLM-Powered Insights**: Uses OpenAI GPT-4-1-nano for intelligent market analysis
+- **LLM-Powered Insights**: Uses llm7.io GPT-5-nano and OpenAI GPT-5-mini for intelligent market analysis
 - **Dual Investment Strategy**: Recommendations for stable ($200) and risky ($50) allocations
 - **Real-time Data**: Integration with Yahoo Finance, Alpha Vantage, and news APIs
 - **Comprehensive Reports**: Daily and 30-day summary reports
@@ -30,9 +30,10 @@ Dividend Stocks  News APIs       JSON Files    Confidence     Web Interface
 
 - Docker and Docker Compose
 - API Keys:
-  - OpenAI API key (for GPT-4-1-nano)
+  - LLM7.io API key (for GPT-5-nano primary model) - recommended
+  - OpenAI API key (for GPT-5-mini fallback) - optional but recommended
   - Alpha Vantage API key (free tier: 5 requests/min)
-  - News API key (optional)
+  - News API key (optional for enhanced sentiment analysis)
 
 ### Installation
 
@@ -44,8 +45,12 @@ cd trade-bot
 
 2. **Set up environment variables**
 ```bash
-cp .env.example .env
-# Edit .env with your API keys
+# Create .env file with your API keys
+echo "LLM7_API_KEY=your_llm7_api_key" > .env
+echo "OPENAI_API_KEY=your_openai_api_key" >> .env
+echo "ALPHA_VANTAGE_KEY=your_alpha_vantage_key" >> .env
+echo "NEWS_API_KEY=your_news_api_key" >> .env
+# Or edit manually: nano .env
 ```
 
 3. **Start the system**
@@ -102,8 +107,9 @@ docker compose up redis -d
 mkdir -p data
 
 # Set environment variables
-export OPENAI_API_KEY="your-key"
-export ALPHA_VANTAGE_KEY="your-key"
+export LLM7_API_KEY="your-llm7-key"          # Primary LLM provider
+export OPENAI_API_KEY="your-openai-key"      # Fallback LLM provider
+export ALPHA_VANTAGE_KEY="your-alpha-key"
 
 # Run the application
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -166,7 +172,7 @@ python -m app.tasks.daily_tasks test
    - News APIs: Sentiment analysis, market news
 
 3. **AI Analysis** (09:10-09:35 UTC)
-   - LLM processes each stock individually using GPT-4-1-nano
+   - LLM processes each stock individually using GPT-5-nano (llm7.io) with GPT-5-mini fallback
    - Generates trend analysis, risk scores, recommendations
    - Assigns confidence levels and price targets
 
@@ -226,7 +232,7 @@ docker compose logs -f
 ### Scaling
 
 - **Horizontal**: Add more Celery workers for parallel processing
-- **Vertical**: Increase memory/CPU for OpenSearch and Redis
+- **Vertical**: Increase memory/CPU for Redis and application containers
 - **Geographic**: Deploy in multiple regions for redundancy
 
 ### Backup Strategy
@@ -251,14 +257,15 @@ cp data/stock_lists.json stock_lists_backup_$(date +%Y%m%d).json
    - Solution: Implement request queuing or upgrade plan
 
 2. **JSON Storage Issues**
-   - Check data directory permissions
-   - Monitor disk space usage
+   - Check data directory permissions: `ls -la data/`
+   - Monitor disk space usage: `df -h`
+   - Verify data directory structure exists
 
 3. **Celery Tasks Failing**
-   - Check Redis connectivity
-   - Verify API keys are set correctly
-   - Review worker logs for specific errors
-   - Ensure data directory is writable
+   - Check Redis connectivity: `docker exec trade-bot_redis_1 redis-cli ping`
+   - Verify API keys are set correctly in environment
+   - Review worker logs: `docker compose logs -f celery-worker`
+   - Ensure data directory is writable: `chmod 755 data/`
 
 ### Debug Commands
 

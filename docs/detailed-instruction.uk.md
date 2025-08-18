@@ -1,5 +1,9 @@
 # Детальна інструкція для AI агента: Розробка бота аналізу акцій
 
+> **ПРИМІТКА**: Цей документ містить застарілі посилання на OpenSearch та старі моделі LLM. 
+> Для актуальної інформації про проект використовуйте `CLAUDE.md` у кореневій папці.
+> Поточна система використовує JSON-зберігання та GPT-5-nano через llm7.io.
+
 ## 1. Огляд системи
 
 ### Цілі бота:
@@ -12,45 +16,46 @@
 ### Архітектура системи:
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Data Sources  │───▶│   Data Collector │───▶│   OpenSearch    │
+│   Data Sources  │───▶│   Data Collector │───▶│   JSON Storage  │
+│ • Yahoo Finance │    │ • Stock Lists    │    │ • File System  │
+│ • Alpha Vantage │    │ • Validators     │    │ • Structured    │
+│ • News APIs     │    │ • Transformers   │    │ • Time-series   │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                         │
 ┌─────────────────┐    ┌──────────────────┐            │
-│   LLM Analysis  │◀───│   Data Processor │◀───────────┘
+│   Report Output │◀───│   LLM Analysis   │◀───────────┘
+│ • Daily Reports │    │ • GPT-5-nano     │
+│ • Summaries     │    │ • Pattern Recog. │
+│ • API Results   │    │ • Recommendations│
 └─────────────────┘    └──────────────────┘
-        │
-        ▼
-┌─────────────────┐
-│   Report Gen    │
-└─────────────────┘
 ```
 
 ## 2. Технічний стек
 
 ### Основні технології:
 - **Backend**: Python 3.11+ з FastAPI
-- **Database**: OpenSearch для зберігання та пошуку даних
-- **Cache**: Redis для кешування API відповідей
-- **LLM**: OpenAI GPT-4 або Claude (через llm7.io)
+- **Storage**: JSON файли для структурованого зберігання даних
+- **Cache/Broker**: Redis для Celery черги задач
+- **LLM**: llm7.io GPT-5-nano (primary), OpenAI GPT-5-mini (fallback)
 - **Scheduler**: Celery з Redis broker
 - **Monitoring**: Prometheus + Grafana
 - **Deployment**: Docker + Docker Compose
 
 ### Залежності Python:
 ```python
-fastapi==0.104.1
-opensearch-py==2.4.0
-redis==5.0.1
-celery==5.3.4
-openai==1.3.8
-requests==2.31.0
-pandas==2.1.3
-numpy==1.25.2
-pydantic==2.5.0
-python-schedule==1.2.0
-yfinance==0.2.22
-alpha-vantage==2.3.1
-beautifulsoup4==4.12.2
+fastapi>=0.104.1
+redis>=5.0.1
+celery>=5.3.4
+openai>=1.3.8
+requests>=2.31.0
+pandas>=2.1.3
+numpy>=1.25.2
+pydantic>=2.5.0
+yfinance>=0.2.22
+alpha-vantage>=2.3.1
+beautifulsoup4>=4.12.2
+aiohttp>=3.8.0
+pydantic-settings>=2.0.0
 ```
 
 ## 3. Джерела даних
@@ -66,9 +71,10 @@ beautifulsoup4==4.12.2
    - Фундаментальні дані
    - Новини
 
-3. **Financial Modeling Prep** (безкоштовно до 250 запитів/день)
-   - Фінансові звіти
-   - Аналітичні дані
+3. **Ландинг партнери** (опціонально)
+   - Financial Modeling Prep
+   - Twelve Data
+   - IEX Cloud
 
 4. **News API** або **NewsData.io**
    - Фінансові новини
@@ -110,48 +116,58 @@ beautifulsoup4==4.12.2
 }
 ```
 
-## 4. Структура бази даних OpenSearch
+## 4. Структура зберігання даних (JSON)
 
-### Індекси:
-1. **daily-stock-data-{YYYY-MM}** - щоденні дані акцій
-2. **market-news-{YYYY-MM}** - новини та настрої
-3. **daily-reports-{YYYY-MM}** - щоденні звіти
-4. **summary-reports-{YYYY}** - місячні звіти
+### Організація файлів:
+```
+data/
+├── stocks/                    # Щоденні дані акцій
+│   ├── YYYY-MM-DD_SYMBOL.json
+│   └── ...
+├── reports/                   # Щоденні звіти
+│   ├── DR_YYYY-MM-DD.json
+│   └── ...
+├── summaries/                 # Підсумкові звіти
+│   ├── SR_YYYY-MM-DD.json
+│   └── MR_YYYY-MM-DD.json    # Місячні звіти
+└── stock_lists.json          # Поточні списки акцій
+```
 
-### Mapping для stock data:
+### Структура файлу акції:
 ```json
 {
-  "mappings": {
-    "properties": {
-      "symbol": {"type": "keyword"},
-      "date": {"type": "date"},
-      "category": {"type": "keyword"},
-      "price_data": {
-        "properties": {
-          "open": {"type": "float"},
-          "high": {"type": "float"},
-          "low": {"type": "float"},
-          "close": {"type": "float"},
-          "volume": {"type": "long"}
-        }
-      },
-      "technical_indicators": {
-        "properties": {
-          "rsi": {"type": "float"},
-          "macd": {"type": "float"},
-          "sma_20": {"type": "float"},
-          "sma_50": {"type": "float"}
-        }
-      },
-      "ai_analysis": {
-        "properties": {
-          "trend_direction": {"type": "keyword"},
-          "risk_score": {"type": "float"},
-          "recommendation": {"type": "keyword"},
-          "confidence": {"type": "float"}
-        }
-      }
-    }
+  "symbol": "AAPL",
+  "date": "2025-08-18",
+  "category": "STABLE",
+  "price_data": {
+    "open": 150.25,
+    "high": 152.10,
+    "low": 149.80,
+    "close": 151.75,
+    "volume": 45000000,
+    "previous_close": 149.50,
+    "change_percent": 1.50
+  },
+  "technical_indicators": {
+    "rsi": 65.5,
+    "macd": 2.1,
+    "sma_20": 148.30,
+    "sma_50": 145.60,
+    "bollinger_upper": 155.20,
+    "bollinger_lower": 142.40
+  },
+  "ai_analysis": {
+    "recommendation": "BUY",
+    "confidence": 0.85,
+    "trend_direction": "BULLISH",
+    "risk_score": 0.3,
+    "reasoning": "Сильні фундаментальні показники та позитивний технічний тренд",
+    "price_target_30d": 165.00
+  },
+  "metadata": {
+    "analysis_timestamp": "2025-08-18T09:15:00Z",
+    "llm_model": "gpt-5-nano-2025-08-07",
+    "data_sources": ["yfinance", "alpha_vantage"]
   }
 }
 ```
@@ -161,31 +177,34 @@ beautifulsoup4==4.12.2
 ```
 trading_bot/
 ├── app/
-│   ├── __init__.py
-│   ├── main.py                 # FastAPI app
-│   ├── config.py              # Конфігурація
+│   ├── main.py                      # FastAPI застосунок з health checks
+│   ├── config.py                    # Динамічна конфігурація
 │   ├── models/
-│   │   ├── __init__.py
-│   │   ├── stock_data.py      # Pydantic моделі
-│   │   └── reports.py
+│   │   ├── stock_data.py           # Pydantic моделі для даних акцій
+│   │   └── reports.py              # Моделі звітів та рекомендацій
 │   ├── services/
-│   │   ├── __init__.py
-│   │   ├── data_collector.py  # Збір даних
-│   │   ├── analyzer.py        # LLM аналіз
-│   │   ├── opensearch_client.py
-│   │   └── report_generator.py
+│   │   ├── stock_list_collector.py # Динамічний збір списків акцій
+│   │   ├── data_collector.py       # Мульти-джерельний збір даних
+│   │   ├── analyzer.py             # LLM аналіз (GPT-5-nano)
+│   │   ├── json_storage.py         # JSON файлове зберігання
+│   │   ├── llm_adapter.py          # Адаптер для багатьох LLM провайдерів
+│   │   └── report_generator.py     # Генерація щоденних/підсумкових звітів
 │   ├── api/
-│   │   ├── __init__.py
-│   │   ├── stocks.py          # API endpoints
-│   │   └── reports.py
+│   │   ├── stocks.py               # Ендпойнти для аналізу акцій та watchlist
+│   │   └── reports.py              # Ендпойнти для звітів та рекомендацій
 │   └── tasks/
-│       ├── __init__.py
-│       ├── daily_tasks.py     # Celery задачі
-│       └── scheduler.py
-├── docker compose.yml
-├── Dockerfile
-├── requirements.txt
-└── README.md
+│       ├── daily_tasks.py          # Celery задачі для автоматизованого аналізу
+│       └── scheduler.py            # Конфігурація cron планування
+├── data/                           # JSON зберігання
+│   ├── stocks/                     # Щоденні дані аналізу акцій
+│   ├── reports/                    # Щоденні звіти
+│   ├── summaries/                  # 30-денні підсумкові звіти
+│   └── stock_lists.json           # Поточні динамічні списки акцій
+├── docs/                           # Документація
+├── docker-compose.yml              # Redis + app сервіси
+├── Dockerfile                      # Конфігурація контейнера
+├── requirements.txt                # Python залежності
+└── run.py                         # Скрипт управління для розробки
 ```
 
 ## 6. Ключові компоненти
@@ -266,7 +285,7 @@ from typing import Dict, List
 import json
 
 class LLMAnalyzer:
-    def __init__(self, api_key: str, model: str = "gpt-4"):
+    def __init__(self, api_key: str, model: str = "gpt-5-mini"):
         self.client = openai.OpenAI(api_key=api_key)
         self.model = model
 

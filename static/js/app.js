@@ -150,6 +150,7 @@ class TradingBotApp {
         await Promise.all([
             this.loadSystemInfo(),
             this.loadTodaysPicks(),
+            this.loadAIPicksSummary(),
             this.loadMarketOverview(),
             this.loadQuickStats()
         ]);
@@ -235,6 +236,61 @@ class TradingBotApp {
             `;
         } catch (error) {
             showError('Failed to load today\'s recommendations', 'todays-picks');
+        }
+    }
+
+    async loadAIPicksSummary() {
+        showLoading('ai-picks-summary');
+        try {
+            const aiRecs = await api.getLatestAIRecommendations();
+            
+            const stableSymbol = aiRecs.ai_stable_recommendation?.symbol || 'N/A';
+            const riskySymbol = aiRecs.ai_risky_recommendation?.symbol || 'N/A';
+            const totalAllocation = (aiRecs.ai_stable_recommendation?.allocation || 0) + (aiRecs.ai_risky_recommendation?.allocation || 0);
+            const avgConfidence = ((aiRecs.ai_stable_recommendation?.confidence || 0) + (aiRecs.ai_risky_recommendation?.confidence || 0)) / 2;
+            
+            document.getElementById('ai-picks-summary').innerHTML = `
+                <div class="ai-summary">
+                    <div class="ai-summary-header">
+                        <div class="ai-picks-overview">
+                            <span class="summary-symbols">${stableSymbol} • ${riskySymbol}</span>
+                            <span class="summary-total">${formatCurrency(totalAllocation)} total</span>
+                        </div>
+                    </div>
+                    <div class="ai-summary-metrics">
+                        <div class="metric">
+                            <i class="fas fa-brain"></i>
+                            <span>AI Confidence: ${formatPercentage(avgConfidence)}</span>
+                        </div>
+                        <div class="metric">
+                            <i class="fas fa-calendar"></i>
+                            <span>Analysis: ${aiRecs.days_analyzed || 0} days</span>
+                        </div>
+                    </div>
+                    <div class="ai-summary-breakdown">
+                        <div class="breakdown-item stable">
+                            <span class="category">Stable:</span>
+                            <span class="amount">${formatCurrency(aiRecs.ai_stable_recommendation?.allocation || 0)}</span>
+                        </div>
+                        <div class="breakdown-item risky">
+                            <span class="category">Growth:</span>
+                            <span class="amount">${formatCurrency(aiRecs.ai_risky_recommendation?.allocation || 0)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="ai-summary-footer">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Based on comprehensive AI analysis</span>
+                </div>
+            `;
+        } catch (error) {
+            document.getElementById('ai-picks-summary').innerHTML = `
+                <div class="ai-summary-empty">
+                    <i class="fas fa-robot"></i>
+                    <p>No AI analysis available</p>
+                    <small>AI picks will appear after summary report generation</small>
+                </div>
+            `;
         }
     }
 

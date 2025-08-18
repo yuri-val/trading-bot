@@ -2712,3 +2712,169 @@ label {
         font-size: 2rem;
     }
 }
+
+/* AI Picks Summary Styles */
+.ai-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 15px;
+}
+
+.ai-summary-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.ai-picks-overview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-symbols {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+    background: linear-gradient(135deg, #3498db, #9b59b6);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.summary-total {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #27ae60;
+}
+
+.ai-summary-metrics {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    padding: 15px 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.ai-summary-metrics .metric {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.ai-summary-metrics .metric i {
+    color: #3498db;
+}
+
+.ai-summary-breakdown {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.breakdown-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.breakdown-item:hover {
+    transform: translateY(-2px);
+}
+
+.breakdown-item.stable {
+    background: rgba(40, 167, 69, 0.1);
+    border-left: 3px solid #28a745;
+}
+
+.breakdown-item.risky {
+    background: rgba(220, 53, 69, 0.1);
+    border-left: 3px solid #dc3545;
+}
+
+.breakdown-item .category {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+}
+
+.breakdown-item .amount {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.ai-summary-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding-top: 10px;
+    color: #7f8c8d;
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
+.ai-summary-footer i {
+    color: #3498db;
+}
+
+/* AI Summary Empty State */
+.ai-summary-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+    min-height: 200px;
+}
+
+.ai-summary-empty i {
+    font-size: 2.5rem;
+    color: #bdc3c7;
+    margin-bottom: 15px;
+}
+
+.ai-summary-empty p {
+    color: #7f8c8d;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+
+.ai-summary-empty small {
+    color: #95a5a6;
+    font-size: 0.85rem;
+}
+
+/* Mobile responsiveness for AI summary */
+@media (max-width: 768px) {
+    .ai-summary-metrics {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .ai-summary-breakdown {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .summary-symbols {
+        font-size: 1.3rem;
+    }
+    
+    .summary-total {
+        font-size: 1rem;
+    }
+}

@@ -27,8 +27,8 @@ class LLMAdapter:
     def __init__(self):
         self.llm7_client = None
         self.openai_client = None
-        self.primary_model = "gpt-4.1-nano-2025-04-14"
-        self.fallback_model = "gpt-4.1-nano"
+        self.primary_model = "gpt-5-nano-2025-08-07"
+        self.fallback_model = "gpt-5-mini"
         self.llm7_base_url = "https://api.llm7.io/v1"
 
         self._init_llm7()

@@ -60,7 +60,7 @@ async def root():
     else:
         return {
             "message": "Trading Bot API",
-            "version": "1.0.0", 
+            "version": "1.0.0",
             "description": "Automated stock analysis and investment recommendations",
             "note": "Web UI not available - templates not found",
             "endpoints": {
@@ -94,10 +94,10 @@ async def health_check():
     try:
         # Check JSON storage health
         storage_health = storage.get_health_status()
-        
+
         # Get current watchlist info
         watchlist = await data_collector.get_watchlist()
-        
+
         # Basic system health
         system_health = {
             "status": "healthy",
@@ -115,14 +115,14 @@ async def health_check():
                 "stock_lists_last_updated": watchlist.get("last_updated")
             }
         }
-        
+
         # Determine overall health
         if storage_health.get("status") == "error":
             system_health["status"] = "degraded"
             system_health["warnings"] = ["JSON storage system issues"]
-        
+
         return system_health
-        
+
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(
@@ -141,7 +141,7 @@ async def test_llm_providers():
     try:
         provider_status = llm_adapter.get_provider_status()
         connection_tests = await llm_adapter.test_connection()
-        
+
         return {
             "provider_status": provider_status,
             "connection_tests": connection_tests,
@@ -163,7 +163,7 @@ async def test_llm_providers():
 async def get_config():
     """Get system configuration (non-sensitive data only)"""
     watchlist = await data_collector.get_watchlist()
-    
+
     return {
         "watchlist": {
             "stable_stocks": watchlist["stable"],
@@ -192,18 +192,18 @@ async def get_system_status():
         # Get recent analysis data
         today = datetime.now().strftime("%Y-%m-%d")
         yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-        
+
         # Check for today's report
         todays_report = await storage.get_daily_report(today)
         yesterdays_report = await storage.get_daily_report(yesterday)
-        
+
         # Get storage stats
         storage_stats = await storage.get_storage_stats()
         storage_health = storage.get_health_status()
-        
+
         # Get current watchlist
         watchlist = await data_collector.get_watchlist()
-        
+
         return {
             "system_time": datetime.now().isoformat(),
             "analysis_status": {
@@ -219,7 +219,7 @@ async def get_system_status():
                 "stock_lists_last_updated": watchlist.get("last_updated")
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Status check failed: {str(e)}")
         return {
@@ -260,7 +260,7 @@ async def internal_error_handler(request: Request, exc):
 async def startup_event():
     """Initialize services on startup"""
     logger.info("Trading Bot API starting up...")
-    
+
     # Check for existing stock lists (non-blocking)
     try:
         # Try to load existing lists without triggering internet updates
@@ -274,9 +274,9 @@ async def startup_event():
             logger.info("No existing stock lists found - will be updated during first daily analysis")
     except Exception as e:
         logger.warning(f"Could not load existing stock lists: {str(e)}")
-    
+
     logger.info(f"Investment allocation: ${settings.stable_investment} stable, ${settings.risky_investment} risky")
-    
+
     # Test storage health
     try:
         health = storage.get_health_status()
@@ -290,7 +290,7 @@ async def startup_event():
 async def shutdown_event():
     """Cleanup on shutdown"""
     logger.info("Trading Bot API shutting down...")
-    
+
     # Optional: perform cleanup tasks
     try:
         # Clean up old data if needed

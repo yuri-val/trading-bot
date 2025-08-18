@@ -1,5 +1,9 @@
 # Технічне завдання: Система автоматизованого аналізу акцій
 
+> **ПРИМІТКА**: Цей документ містить застарілі технічні специфікації. 
+> Для актуальної інформації про проект використовуйте `CLAUDE.md` у кореневій папці.
+> Поточна система використовує JSON-зберігання та GPT-5-nano через llm7.io.
+
 ## 1. Мета та завдання проекту
 
 ### 1.1 Бізнес-цілі
@@ -64,35 +68,35 @@
 ### 3.1 Архітектура системи
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Data Sources  │───▶│   Data Collector │───▶│   Data Storage  │
-│   • Yahoo Finance│    │   • Schedulers   │    │   • OpenSearch  │
-│   • Alpha Vantage│    │   • Validators   │    │   • Time-series │
-│   • News APIs   │    │   • Transformers │    │   • Full-text   │
+│Stock Collector  │───▶│   Data Collector │───▶│   JSON Storage  │
+│• S&P 500 Lists  │    │• Yahoo Finance   │    │• File System    │
+│• Dividend Stocks│    │• Alpha Vantage   │    │• Structured     │
+│• Top Gainers    │    │• News APIs       │    │• Time-series    │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                                         │
 ┌─────────────────┐    ┌──────────────────┐            │
-│   Report Output │◀───│   AI Processor   │◀───────────┘
-│   • Daily Reports│    │   • LLM Analysis │
-│   • Summary     │    │   • Pattern Rec. │
-│   • API Results │    │   • Recommendations│
+│   Report Output │◀───│   LLM Processor  │◀───────────┘
+│• Daily Reports  │    │• GPT-5-nano      │
+│• Summary        │    │• Pattern Recog.  │
+│• API Results    │    │• Recommendations │
 └─────────────────┘    └──────────────────┘
 ```
 
 ### 3.2 Технологічний стек
 - **Backend Framework**: Python FastAPI
-- **База даних**: OpenSearch для зберігання та пошуку
-- **Cache Layer**: Redis для оптимізації
+- **Зберігання даних**: JSON файли для структурованого зберігання
+- **Cache/Broker**: Redis для Celery черги задач
 - **Task Queue**: Celery для асинхронних задач
-- **AI/LLM**: OpenAI GPT-4 або Claude через llm7.io
+- **AI/LLM**: llm7.io GPT-5-nano (primary), OpenAI GPT-5-mini (fallback)
 - **Containerization**: Docker + Docker Compose
 - **Monitoring**: Базові метрики та логування
 
 ### 3.3 Системні вимоги
-- **Продуктивність**: обробка 35+ акцій за 15 хвилин
+- **Продуктивність**: обробка 40+ акцій за 25 хвилин (з урахуванням динамічного збору)
 - **Доступність**: 99% uptime для API
-- **Зберігання**: мінімум 1 рік історичних даних
-- **Безпека**: API ключі в environment variables
-- **Масштабованість**: можливість додавання нових активів
+- **Зберігання**: мінімум 1 рік історичних даних у JSON файлах
+- **Безпека**: API ключі в environment variables, ніяких секретів у коді
+- **Масштабованість**: динамічне додавання нових активів через інтернет-джерела
 
 ## 4. Структура даних
 

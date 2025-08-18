@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an automated stock analysis trading bot system designed to:
 - **Dynamically collect stock lists** daily from internet sources (S&P 500, dividend aristocrats, top gainers)
-- **Analyze 40+ stocks** daily at 12:00 Kyiv time using GPT-4-1-nano
+- **Analyze 40+ stocks** daily at 12:00 Kyiv time using GPT-5-nano
 - **Generate investment recommendations** for two categories:
   - **Stable investments**: $200 (80%) - up to 25 large cap stocks, ETFs, dividend aristocrats
   - **Risky investments**: $50 (20%) - up to 15 growth stocks, leveraged ETFs, recent IPOs
@@ -29,7 +29,7 @@ Dividend Stocks  News APIs       JSON Files    Confidence     Web Interface
 - **Storage**: JSON file-based storage system (replaced OpenSearch for simplicity)
 - **Cache/Broker**: Redis for Celery task queue
 - **Task Scheduler**: Celery with Redis broker for daily analysis
-- **LLM**: llm7.io with gpt-4.1-nano-2025-04-14 (primary), OpenAI GPT-4 (fallback)
+- **LLM**: llm7.io with gpt-5-nano-2025-08-07 (primary), OpenAI GPT-5-mini (fallback)
 - **Deployment**: Docker + Docker Compose
 
 ### Data Sources:
@@ -51,7 +51,7 @@ trading_bot/
 │   ├── services/
 │   │   ├── stock_list_collector.py # Dynamic stock list collection from web
 │   │   ├── data_collector.py       # Multi-source data collection
-│   │   ├── analyzer.py             # LLM analysis service (GPT-4-1-nano)
+│   │   ├── analyzer.py             # LLM analysis service (GPT-5-nano)
 │   │   ├── json_storage.py         # JSON file storage operations
 │   │   └── report_generator.py     # Daily/summary report generation
 │   ├── api/
@@ -258,8 +258,8 @@ The system automatically updates stock lists daily by collecting from multiple i
 - Automatic cleanup of old data (configurable retention period)
 
 ### LLM Integration:
-- **Primary Provider**: llm7.io with **gpt-4.1-nano-2025-04-14** model for cost efficiency and performance
-- **Fallback Provider**: OpenAI with GPT-4 for reliability
+- **Primary Provider**: llm7.io with **gpt-5-nano-2025-08-07** model for cost efficiency and performance
+- **Fallback Provider**: OpenAI with GPT-5-mini for reliability
 - **Multi-provider architecture** ensures high availability with automatic failover
 - Each stock analyzed individually with comprehensive prompts
 - Analysis includes trend direction, risk assessment, price targets, and reasoning
